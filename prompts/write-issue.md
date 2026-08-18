@@ -159,12 +159,17 @@ Do not use `.why` boxes or any styled callout for editorial judgment. That reaso
 must **inform the tone and perspective of the writing**, closing a story as ordinary
 prose. The front-page inline clause is **`Why it matters:`** — never "For you:".
 
-### 4. AI disclosure, in four places
+### 4. AI disclosure, in five places
 
 (a) the page-1 `.aibar` block, containing the exact phrase **"not reviewed by a human
 editor"**; (b) the running PDF footer (already in the PDF script); (c) an **"About
 This Brief — Method, Limitations, Disclaimers"** section; (d) PDF metadata (handled
-later). The build adds the site-level disclosures.
+later); (e) inside that About section, a **not-professional-advice disclaimer** —
+wording is yours, but it must contain "not legal advice" or "not professional
+advice" (nothing here is legal, medical, financial, tax, real-estate or safety
+advice; see `docs/EDITORIAL-RISK.md`). The build adds the site-level disclosures.
+
+All five are checked by `bin/verify-issue.mjs`; (a), (c) and (e) are FATAL.
 
 **On admitting gaps.** If a figure could not be sourced, the issue must say so, in
 **one or two plain sentences a reader cares about**: *"Ridership figures for the
@@ -244,6 +249,12 @@ internal link.
   agency's own notice. When a claim traces to an official announcement, read the
   announcement: the write-up tells you what happened, the record tells readers
   what to do about it.
+- **A date read out of an extracted PDF table is not verified until you have
+  confirmed the column order.** Text extraction flattens table columns into one
+  stream, so an agenda packet's `Issued`/`Filed` columns can interleave and a
+  naive read pairs a name with the wrong date. Resolve it against a row in the
+  same table where the pairing is unambiguous, then apply that column order to
+  the rest. Agenda packets are PDFs everywhere; this will come up.
 - **An agency publishes two kinds of page about the same thing — read both.**
   Dated notices say what is happening this week; the **standing project page**
   says what shape the thing is: total duration, phases, why, alert sign-ups.
@@ -440,7 +451,11 @@ publisher's explicit approval.
 Open with a **one-page front summary**: compact masthead (the configured name — with
 "(Experimental)" if configured — and the configured tagline as subtitle), dateline,
 `.aibar`, a `THE WEEK IN ONE PAGE` heading over a 2px rule, then **4–5 items ranked
-by consequence to residents**. Each item is exactly this shape, no exceptions:
+by consequence to residents**.
+
+**The whole summary is wrapped in `<section class="frontpage">…</section>`.** That
+wrapper is required — `bin/verify-issue.mjs` fails the issue without it, and the
+build keys off it. Each item inside is exactly this shape, no exceptions:
 
 ```html
 <div class="fp-item">

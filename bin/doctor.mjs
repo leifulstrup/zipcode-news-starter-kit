@@ -59,6 +59,16 @@ const CASES = [
     expectMessage: /site chrome/i,
   },
   {
+    // The gates' own fixture keeps a minimal stylesheet, so nothing exercised
+    // them against the file instances actually inline — and a CSS comment
+    // naming the markup it styled was extracted as a front-page headline,
+    // shipping a phantom item into every RSS description and archive entry.
+    // What the gates test and what instances ship must not be different files.
+    name: 'verify accepts the issue with house-style.css inlined',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/styled-issue.html'],
+    expectExit: 0,
+  },
+  {
     name: 'verify rejects missing per-section sources',
     cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-missing-sources.html'],
     expectExit: 1,
@@ -106,6 +116,36 @@ try {
 } catch (e) {
   failures++;
   rows.push({ result: 'FAIL', case: 'source-classes loads', detail: e.message });
+}
+
+// A stylesheet must never contribute content. The styled fixture inlines the
+// shipped house stylesheet exactly as the brief instructs; if it yields more
+// front-page headlines than the minimal fixture, a CSS comment is being read as
+// editorial content again — the bug that put a phantom "…" at the top of every
+// archive entry and RSS description.
+try {
+  const { readFileSync } = await import('node:fs');
+  const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const heads = f => {
+    const html = readFileSync(join(ROOT, 'fixtures', f), 'utf8')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<script[\s\S]*?<\/script>/gi, ' ');
+    return [...html.matchAll(/<p class="fp-h">([\s\S]*?)<\/p>/g)].map(m => strip(m[1]));
+  };
+  const plain = heads('good-issue.html'), styled = heads('styled-issue.html');
+  const ok = plain.length === styled.length && !styled.some(h => /^[.…\s]*$/.test(h));
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'inlining the house stylesheet adds no phantom headlines',
+    detail: ok ? '' :
+      `minimal fixture yields ${plain.length} headlines, styled fixture ${styled.length}` +
+      `${styled.filter(h => /^[.…\s]*$/.test(h)).length ? ' (and one is empty/ellipsis)' : ''} — ` +
+      `a CSS comment is being parsed as content. Never put literal markup in a stylesheet comment, ` +
+      `and strip <style> before scanning for structure.`,
+  });
+} catch (e) {
+  failures++;
+  rows.push({ result: 'FAIL', case: 'styled-fixture headline parity', detail: e.message });
 }
 
 // ---------------------------------------------------------------------------

@@ -48,11 +48,19 @@ Notes on two of these:
 
 - **measure-issue is advisory, not a gate — read its counts anyway.** They are
   cheap, deterministic evidence and they catch editorial failures the gates
-  cannot: a `renters: 0` on an issue whose brief requires naming renters' stake
-  means the draft wrote *around* the requirement without meeting it (a real
-  first-issue finding — the phrase "people who do not have a yard of their own"
-  reads neutral and isn't). A zero can also be a measurement gap (identifier
-  shapes vary by jurisdiction), so investigate zeros, don't just chase them.
+  cannot. **The standing rule, confirmed twice in the field: when this tool
+  reports zero on something the brief requires, the draft has usually written
+  *around* the requirement rather than met it.** Investigate every such zero
+  before dismissing it — the natural reaction to an advisory number is to wave
+  it off, and that reaction has been wrong nearly every time. Real examples: a
+  `renters: 0` on a draft that said "people who do not have a yard of their own"
+  (reads neutral, isn't); a `contactRoutes: 0` on a draft that said "emailed to
+  the City Clerk" without ever printing the address or phone — the fix was the
+  single most useful thing added to that issue; a `smallBaseCaveats: 0` on a
+  draft that *had* caveated a small base, but in words the detector missed, and
+  rewriting it plainly improved the prose anyway. A zero can still be a
+  measurement gap (identifier shapes vary by jurisdiction) — but establish that,
+  don't assume it.
 - **The PDF step needs Playwright's browser, which a fresh clone does not have**
   (`npm install && npx playwright install chromium`). If it's not installed,
   the step exits with instructions — expect that, say so, and offer to install

@@ -61,7 +61,8 @@ need(/not reviewed by a human editor/i.test(text),
 need(/About This Brief/i.test(text),
   'No "About This Brief — Method, Limitations, Disclaimers" section. Every issue carries its methodology.');
 need(/not (?:legal|professional)[^.]*advice/i.test(text),
-  'No not-professional-advice disclaimer. Add it to the About section.');
+  'No not-professional-advice disclaimer. Add it to the About section. ' +
+  'See prompts/write-issue.md rule 4 (disclosure), which lists it among the required disclosures.');
 
 /* ---------- 2. attribution and citation ---------- */
 const srcBlocks = (html.match(/Sources for this section/gi) || []).length;
@@ -75,10 +76,18 @@ want(visibleUrls >= 10,
   `Only ${visibleUrls} visible source URLs — a hyperlink is dead on paper, so source entries should print their URL in <span class="u">.`);
 
 /* ---------- 3. structure the site build depends on ---------- */
-const fpH = (html.match(/<p class="fp-h">/g) || []).length;
+// Structure checks scan CONTENT, never the inlined stylesheet: a CSS comment
+// naming the markup it styles would otherwise be counted as a front-page item,
+// inflating the count and masking a real ceiling breach. (The raw `html` is
+// still used below for the CSS-leak check, which is ABOUT the stylesheet.)
+const contentHtml = html.replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                        .replace(/<script[\s\S]*?<\/script>/gi, ' ');
+const fpH = (contentHtml.match(/<p class="fp-h">/g) || []).length;
 need(fpH >= 3, `Only ${fpH} front-page headlines (<p class="fp-h">). The archive list and RSS descriptions are built from these; the front page needs 3–6.`);
 want(fpH <= 6, `${fpH} front-page items — the summary is meant to fit one page; more than 5 usually will not.`);
-need(/class="frontpage"/.test(html), 'No .frontpage block — the one-page summary is a required element.');
+need(/class="frontpage"/.test(contentHtml),
+  'No .frontpage block — the one-page summary is a required element. ' +
+  'See prompts/write-issue.md, Structure: the front page is <section class="frontpage">.');
 
 // CSS must not leak into the page as visible text. A stylesheet appended AFTER the
 // closing </style> renders as a paragraph of source code at the top of the issue —

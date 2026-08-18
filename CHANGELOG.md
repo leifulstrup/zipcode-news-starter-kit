@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.10.1] — 2026-08-18
+
+Second field instance, `/first-issue` complete: gate-clean issue, 12-page PDF,
+39 citations, 75% primary hosts. It was the first to test `fixtures/house-style.css`
+as intended, and found that following the brief exactly shipped a bug to readers.
+
+### Fixed
+- **HIGH, user-visible: a CSS comment was parsed as a front-page headline.** The
+  shipped stylesheet contained `/* headline: <p class="fp-h"><b>…</b></p> */`;
+  the brief says to inline the whole sheet; and both `build.mjs` and
+  `verify-issue.mjs` scanned the raw file for `<p class="fp-h">`. Sitting in
+  `<style>` at the top of the document, the comment became the **first** extracted
+  headline — so every archive entry and every RSS description led with a phantom
+  "…" item, and verify reported one more front-page item than existed (an
+  instance at the 6-item ceiling would have been told it had 7). Fixed at the
+  cause: **`<style>`/`<script>` are stripped before any content-structure scan**,
+  in both files. Also fixed the instance (the comment now describes in words) and
+  added a standing warning to the stylesheet against literal markup in comments.
+- **The gates' fixture and the file instances inline were different files**, so
+  nothing ever exercised the gates against what publishers actually ship. New
+  `fixtures/styled-issue.html` inlines `house-style.css` exactly as the brief
+  instructs; doctor now verifies it passes and that **inlining the stylesheet adds
+  no phantom headlines** — verified against a deliberate reintroduction.
+- **Two gate requirements existed nowhere in the brief.** `class="frontpage"`
+  (FATAL) and the not-professional-advice disclaimer (FATAL) were enforced only
+  in `verify-issue.mjs`, so a writer following the brief faithfully failed the
+  gate twice with no way to learn except reading the gate source. Both are now in
+  the brief — the front-page wrapper in the Structure markup block, the
+  disclaimer as a fifth disclosure place — and both failure messages now name the
+  brief section to read. (The irony was the tester's: `verify-issue.mjs`'s own
+  header says rules "never live only in the brief," and these lived only in the
+  gate.)
+
+### Added
+- Brief §4a: **a date read out of an extracted PDF table is not verified until
+  the column order is confirmed** against a row where the pairing is unambiguous.
+  Text extraction flattens columns into one stream, so a naive read pairs a name
+  with the wrong date — found in a real agenda packet. Agenda packets are PDFs
+  everywhere.
+- `/first-issue` now states as a **standing rule** what two instances have now
+  confirmed: when `measure-issue` reports zero on something the brief requires,
+  the draft has usually written *around* the requirement rather than met it.
+  Investigate before dismissing — the natural reaction to an advisory number is
+  to wave it off, and that reaction has been wrong nearly every time.
+
 ## [0.10.0] — 2026-08-18
 
 Second field instance, `/find-sources` complete (6 adopted, 5 rejected, 4

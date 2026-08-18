@@ -8,6 +8,10 @@
  * generic — the first field instance had to reverse-engineer the look from the
  * reference publication. Ship the style; don't describe it.
  *
+ * NEVER put literal content markup inside a comment in this file. Issues inline
+ * this stylesheet, and tools scan issues for structural tags; a comment naming a
+ * tag it styles has been extracted as real content. Describe in words instead.
+ *
  * HOW TO USE (the brief points here): inline this whole sheet in your issue's
  * <style> block and set the three custom properties from site.config.json
  * colors — accent, paper, ink. Everything else keys off those.
@@ -89,7 +93,7 @@ h1.title .exp {           /* the "(Experimental)" tag — part of the name */
   margin-top: 3px;
 }
 .fp-item > div { flex: 1; }
-p.fp-h { margin: 0 0 4px; font-size: 17.5px; }        /* headline: <p class="fp-h"><b>…</b></p> */
+p.fp-h { margin: 0 0 4px; font-size: 17.5px; }        /* the headline paragraph; bold text inside */
 .fp-item p { margin: 0 0 6px; }
 .fp-cols { display: flex; gap: 22px; margin-top: 26px; }
 .fp-cols > * { flex: 1; }

@@ -73,7 +73,15 @@ const issues = readdirSync(SRC)
 const meta = issues.map(date => {
   const html = readFileSync(path.join(SRC, `${date}.html`), 'utf8');
   // Front-page item headlines double as the issue's contents list (archive + RSS).
-  const heads = [...html.matchAll(/<p class="fp-h">([\s\S]*?)<\/p>/g)]
+  // Scan CONTENT only: an issue inlines its stylesheet, and a CSS comment that
+  // mentions the markup it styles (`/* <p class="fp-h"><b>…</b></p> */`) is
+  // otherwise extracted as a headline — and, sitting in <style> at the top of
+  // the file, becomes the FIRST one. That shipped a phantom "…" as the lead
+  // bullet of every archive entry and RSS description until a field instance
+  // caught it. Never scan a stylesheet for content markup.
+  const content = html.replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                      .replace(/<script[\s\S]*?<\/script>/gi, ' ');
+  const heads = [...content.matchAll(/<p class="fp-h">([\s\S]*?)<\/p>/g)]
     .map(m => strip(m[1]));
   const vol = (html.match(/Vol\.\s*\d+,\s*No\.\s*\d+/) || [''])[0];
   const pdf = existsSync(path.join(SRC, `${date}.pdf`)) ? `${date}.pdf` : null;
