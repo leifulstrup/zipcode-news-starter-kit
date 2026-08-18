@@ -24,9 +24,29 @@ const issues = existsSync(join(ROOT, 'issues'))
 const hasGoneLive = cfg.domain !== '' || src.self.length > 0;
 
 const configured = cfg.zip !== '00000';
-const hasSources = src.primary.length + src.interestedPrimary.length + src.secondary.length > 0
-  || (existsSync(join(ROOT, 'data', 'source-log.md'))
-      && /\| *\d{4}-\d{2}-\d{2}/.test(readFileSync(join(ROOT, 'data', 'source-log.md'), 'utf8')));
+
+// A step counts as DONE only on evidence that it produced its actual output.
+// Deliberately NOT "the source log has entries": the log records rejections
+// too, so an instance that vetted ten candidates and approved none would be
+// told to move on with an empty registry. Approved sources live in
+// config/sources.json; the log is history, not roster.
+const approvedSources = src.primary.length + src.interestedPrimary.length + src.secondary.length;
+const hasSources = approvedSources > 0;
+
+// Partial progress within a step — worth saying out loud, because "you have
+// started this but not finished it" is a different instruction from "start
+// this". Each entry: a condition that is true only mid-step, and what to say.
+const loggedCandidates = existsSync(join(ROOT, 'data', 'source-log.md'))
+  && /\| *\d{4}-\d{2}-\d{2}/.test(readFileSync(join(ROOT, 'data', 'source-log.md'), 'utf8'));
+const partials = [];
+if (configured && !hasSources && loggedCandidates)
+  partials.push('Source candidates are logged in data/source-log.md but none are approved into ' +
+    'config/sources.json yet — /find-sources is started, not finished. Resume it to approve or reject the rest.');
+if (configured && cfg.geographyNote === '')
+  partials.push('site.config.json has no geographyNote yet — /find-sources fills it in. ' +
+    'The verify gate warns until it is written.');
+if (hasSources && !existsSync(join(ROOT, 'bin', 'adapters', 'index.mjs')))
+  partials.push('bin/adapters/index.mjs is missing — data fetching cannot run.');
 
 const steps = [
   {
@@ -57,6 +77,11 @@ const steps = [
 
 console.log(`\nnext-step — ${cfg.siteName}${configured ? ` (ZIP ${cfg.zip})` : ''}\n`);
 for (const s of steps) console.log(`  ${s.done ? '[done]' : '[    ]'}  ${s.label}`);
+
+if (partials.length) {
+  console.log('\nIN PROGRESS:');
+  for (const p of partials) console.log(`  - ${p}`);
+}
 
 const next = steps.find(s => !s.done);
 if (next) {

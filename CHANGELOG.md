@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.7] — 2026-08-18
+
+### Fixed
+- **`next-step.mjs` called `/find-sources` done when nothing had been
+  approved.** It treated any dated row in `data/source-log.md` as evidence the
+  step was finished — but the log records **rejections** too, so an instance
+  that vetted ten candidates and approved none was told to move on with an
+  empty registry. Completion is now judged only on approved sources in
+  `config/sources.json`; the log is history, not roster.
+
+### Added
+- **Partial-progress reporting in `next-step.mjs`.** "You have started this but
+  not finished it" is a different instruction from "start this." It now reports
+  in-progress states: candidates logged but none approved, `geographyNote`
+  still empty, a missing adapter registry.
+- **`.github/workflows/kit-ci.yml`** — the kit self-tests on Node 20/22/24/
+  latest (`fail-fast: false`), running doctor, a fresh-clone build,
+  orientation, the zero-adapter fetch path, all three watchdog scripts, and
+  measurement — so the README's "Node 20+" claim stays true rather than
+  aspirational, and deprecation warnings surface here instead of in a
+  publisher's weekly run. No secrets, no network, no cost. (Second field
+  instance, ZIP 90706.)
+
 ## [0.7.6] — 2026-08-18
 
 ### Added

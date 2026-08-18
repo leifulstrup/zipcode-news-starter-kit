@@ -1,0 +1,51 @@
+# Kit self-test. Keeps the README's "Node 20+" claim true instead of
+# aspirational: a fresh clone must pass doctor and build on every Node version
+# the kit claims to support. No secrets, no network, no cost — this runs on the
+# kit itself and on every instance that pulls it.
+#
+# It deliberately tests the UNCONFIGURED state, because that is what a new
+# publisher has in their first thirty seconds, and it is the state the kit
+# promises will be green.
+name: Kit self-test
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['issues/**', 'addendum/**', 'data/**', 'docs/architecture.svg']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false          # one bad version must not hide the others
+      matrix:
+        node: ['20', '22', '24', 'latest']
+    name: node ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Gates catch what they claim (doctor)
+        run: node bin/doctor.mjs
+      - name: A fresh clone builds
+        run: node build.mjs
+      - name: Orientation works
+        run: node bin/next-step.mjs
+      - name: Fetch layer runs with zero adapters
+        run: |
+          node bin/fetch-data.mjs --week 2026-01-02
+          rm -f data/facts/2026-01-02.json
+      - name: Watchdog scripts run clean on a fresh kit
+        run: |
+          node bin/check-published.mjs
+          node bin/probe-sources.mjs
+          node bin/source-retrospective.mjs --min-age-days 21
+      - name: Measurement runs on the fixture
+        run: node QA-QC/measure-issue.mjs fixtures/good-issue.html > /dev/null
+      - name: Deprecation warnings are visible, not hidden
+        # Not a failure: newer Node versions warn before they break, and the
+        # point is to see the warning here rather than in a publisher's run.
+        run: node --trace-deprecation bin/doctor.mjs 2>&1 | grep -i "deprecat" && echo "::warning::deprecation warnings on node ${{ matrix.node }} — fix before they become errors" || echo "no deprecation warnings"
