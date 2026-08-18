@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.8] — 2026-08-18
+
+### Added
+- **`/setup` now checks whether you started from a stale template copy** — right
+  after doctor, before any configuration. A repo made from a GitHub template is
+  a snapshot with no link back, so a copy taken from an older release has no way
+  to know it is behind; this happened to a real publisher, who discovered it
+  eight releases later. The check compares `package.json` against the latest
+  release and offers to update first, because **updating before configuring is
+  nearly conflict-free while updating after customization is a real merge** (a
+  field instance that updated late worked through twenty conflicts; the same
+  update run early took one). README's Quickstart now says to take the copy from
+  the latest release for the same reason.
+
 ## [0.7.7] — 2026-08-18
 
 ### Fixed

@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.7.7** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.7.8** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -42,6 +42,11 @@ You need [Claude Code](https://claude.com/claude-code) and
 
 1. **Get your copy**: click **Use this template** on GitHub (or download the ZIP)
    — don't fork; your copy will become a private repo with your own settings.
+   Take it from the [latest
+   release](https://github.com/leifulstrup/zipcode-news-starter-kit/releases): a
+   template copy is a *snapshot* with no link back, so starting from an old one
+   means starting behind. `/setup` checks this for you and offers to update
+   before you configure anything — the cheapest moment to do it.
 
 2. **Prove the kit works before you invest a minute in it.** In the folder, run:
 

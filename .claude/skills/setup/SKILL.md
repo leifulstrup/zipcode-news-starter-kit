@@ -29,6 +29,30 @@ before they invest ten minutes in an interview. If it fails, stop and fix that
 first: everything downstream depends on the gates working, and a failure here is
 usually Node (needs 20+) rather than the kit.
 
+### Then check you started from a current copy — before configuring anything
+
+A repo made from the GitHub template is a **snapshot**: if the template moved on
+after the copy was made, the copy is stale and has no way to know it. Check now,
+because **updating before you configure is nearly conflict-free, while updating
+after customization is a real merge** (a field instance that updated late worked
+through twenty conflicts; the same update run early took one).
+
+```
+node -p "require('./package.json').version"
+gh release view --repo leifulstrup/zipcode-news-starter-kit --json tagName -q .tagName 2>/dev/null \
+  || echo "(no gh CLI — compare against https://github.com/leifulstrup/zipcode-news-starter-kit/releases)"
+```
+
+If the local version is behind the latest release, say so plainly, summarize
+what the user would gain (fetch `CHANGELOG.md` from the template if useful), and
+**offer to update first**: read `.claude/skills/update-kit/SKILL.md` and follow
+it, then come back here. If their copy predates that skill, the README's
+"Getting kit updates into your copy" section has a bootstrap block that fetches
+it from upstream. Never update without the user's agreement — but do make the
+recommendation, because this is the cheapest moment it will ever be.
+
+If the versions match, say so in one line and move on.
+
 Then briefly explain the journey and roughly what each step involves:
 
 1. **/setup** (now, ~10 minutes) — identity, privacy, and a first local build.
