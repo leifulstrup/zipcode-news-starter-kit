@@ -364,6 +364,15 @@ would otherwise repeat. Offer to share it:
 node bin/registry.mjs export
 ```
 
+Better still, hand the whole contribution to the dedicated skill, which shows
+the publisher every row before anything becomes public and opens the pull
+request for them: **read `.claude/skills/contribute-sources/SKILL.md` and follow
+it**. (Contribution is never automatic — a public, permanent row gets an
+explicit yes.)
+
+```
+```
+
 That prints CSV rows for the hosts they approved, ready to open as a pull
 request against the public registry repo. Three things to tell them plainly:
 

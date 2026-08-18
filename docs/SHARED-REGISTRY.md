@@ -145,6 +145,13 @@ node bin/registry.mjs search <term>     # reverse lookup: who else uses this hos
 node bin/registry.mjs export            # emit my approved sources as rows to contribute
 ```
 
+Contributing back is `/contribute-sources`: it exports this instance's approved
+rows, reads each one to the publisher in plain language, re-verifies staleness,
+then forks, validates and opens the pull request — with the publisher approving
+before anything becomes public. The registry also accepts an **issue** instead of
+a PR, which is the right path for anyone who would rather their GitHub account
+not be publicly associated with a particular ZIP code.
+
 `/find-sources` runs the lookup before its own sweep and presents hits as
 candidates — with their traps and verification dates — then searches only for
 what the registry did not cover. `/add-source` checks the registry when vetting

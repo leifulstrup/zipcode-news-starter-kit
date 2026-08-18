@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.12.0] — 2026-08-18
+
+### Added
+- **`/contribute-sources`** — share this instance's vetted sources back to the
+  public registry as a pull request, with the mechanics handled and the judgment
+  left to the publisher: export the approved rows, read each one aloud in plain
+  language, re-verify anything stale, then fork/branch/validate/PR via `gh`. The
+  publisher sees the final diff and PR body before it is created. Contribution
+  is never automatic — a public, permanent row gets an explicit yes.
+- The skill names two things a publisher should decide with open eyes: rows carry
+  **no identity** (the registry's validator rejects emails, phones, addresses,
+  coordinates and parcel numbers by shape), but **a pull request carries a GitHub
+  account**, so anyone who would rather not link their account to a ZIP code
+  should use the registry's issue template instead. A contribution someone feels
+  safe making is worth more than one they don't.
+
 ## [0.11.1] — 2026-08-18
 
 ### Fixed
