@@ -1,7 +1,8 @@
 // TEMPLATE — Socrata open-data adapter. NOT REGISTERED.
 //
 // Copy to a real name (e.g. service-requests.mjs), fill in every <PLACEHOLDER>,
-// then register it in bin/adapters/index.mjs. Read bin/adapters/README.md first.
+// Adapters are AUTO-DISCOVERED: dropping this file in registers it, there is no
+// list to edit. Read bin/adapters/README.md first.
 //
 // FINDING YOUR CITY'S PORTAL
 // Hundreds of US cities/counties/states run Socrata portals — the giveaway is a

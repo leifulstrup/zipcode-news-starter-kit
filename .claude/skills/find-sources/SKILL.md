@@ -143,7 +143,12 @@ instances — with two field-tested cautions:
 - **ArcGIS endpoints often hide from the obvious patterns.** When
   `<place>.opendata.arcgis.com` finds nothing, search the ArcGIS Online catalog
   directly (`arcgis.com/sharing/rest/search` with the place and state as terms) and
-  use the **owning organization** to discriminate — a state GIS office's org account
+  use the **owning organization** to discriminate. For an ArcGIS Hub portal, the
+  route that works is: read `orgId` from the portal page, then query
+  `arcgis.com/sharing/rest/search?q=orgid:<id> AND <terms>` — Hub v3's
+  `filter[orgid]` is rejected as an invalid parameter key. Note also that a
+  county portal on `data.<county>.gov` may be ArcGIS Hub rather than Socrata;
+  check before assuming the query language — a state GIS office's org account
   (e.g. an org slug containing the state name) is the tell that separates the right
   "Lincoln County parcels" layer from the same-named layer in another state.
 
@@ -182,7 +187,17 @@ Before recommending any source:
 
 1. Confirm the ZIP's true city and county (cross-check against census/USPS ZIP
    lookups, not just memory). Check whether the ZIP's boundary crosses **more
-   than one municipality** — common everywhere, not just rural areas: an urban
+   than one municipality** — and use the right tool, because a spatial query
+   answers a different question. **A spatial `intersects` counts a shared
+   boundary edge**: in the field it returned seven cities for a ZCTA that in
+   truth lies 100% inside one of them, which would have put "your ZIP spans
+   seven cities" into every issue forever. Use the Census **ZCTA-to-Place
+   relationship file** instead, which gives the actual shared area:
+   `https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_place20_natl.txt`
+   (pipe-delimited). Grep for `|<zip>|` **with the delimiters** and check the
+   field position — a bare grep for the digits matched an unrelated ZCTA whose
+   water-area value happened to contain them — then read `AREALAND_PART`
+   against `AREALAND_ZCTA5_20` to get each place's real share. — common everywhere, not just rural areas: an urban
    ZIP's polygon can clip three cities and two police departments. Each
    jurisdiction in the footprint has its own offices, agendas, and records; note
    them all.
@@ -226,7 +241,11 @@ Three hard rules learned in field testing:
 For each promising dataset: fetch it. Confirm the ZIP or jurisdiction is actually
 covered, confirm it updates — **by querying the newest record's date from the
 data itself (`max(<date_field>)`), never by trusting the portal's `updatedAt`
-metadata**: catalog stamps reflect file touches, and datasets have carried a
+metadata** — and first **confirm that date field is a real date TYPE**. If it is
+stored as a string, ordering is lexicographic: a layer advertising a `modified`
+date of yesterday, whose string `M/D/YYYY` field sorts "9/7/2019" to the top,
+actually stopped in 2023. Derive freshness from a numeric year field when the
+date is a string. Common on government ArcGIS layers: catalog stamps reflect file touches, and datasets have carried a
 current `updatedAt` while the newest actual record was years old (on Socrata the
 two routinely disagree by years). Note the access shape (API endpoint, CSV, RSS,
 HTML page). A 200 with zero rows where rows are expected is a failure, not a
@@ -292,9 +311,15 @@ the user approve, reject, or park **each one**.
   beats, precincts — almost never ZIP)? School attendance zones? Council wards?
   Write the one-paragraph honest statement of how they differ from the ZIP; the
   About section of every issue will carry it.
-- If the standing `sections` list in `site.config.json` doesn't fit what you found
-  (no transit agency; a big college that deserves a section), propose edits and
-  apply what the user approves.
+- **Walk the standing `sections` list in `site.config.json` one section at a
+  time and get an explicit keep-or-drop from the user for each.** Do not leave
+  this to your own judgment about whether the list "fits" — the shipped list was
+  derived from one dense urban ZIP, and a field instance confirmed it does not
+  survive contact with a smaller city: three sections had no vetted source
+  behind them at all. For each section state what would fill it from the
+  approved registry, and if the answer is nothing, say so and recommend
+  dropping it. A section with no source is a standing invitation to pad. Also
+  propose any section the sweep argues for that the default list lacks.
 - When an approved source exposes an **RSS/Atom feed** (news outlets, agenda
   systems, libraries often do), record the feed URL in `config/feeds.json` —
   the optional daily digest (`/enable-daily`, see `docs/DAILY-DIGEST.md`)

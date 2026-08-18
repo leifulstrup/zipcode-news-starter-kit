@@ -1,7 +1,8 @@
 // TEMPLATE — ArcGIS FeatureServer/MapServer adapter. NOT REGISTERED.
 //
 // Copy to a real name (e.g. crime.mjs), fill in every <PLACEHOLDER>, then register
-// it in bin/adapters/index.mjs. Read bin/adapters/README.md first — every rule in
+// it. Adapters are AUTO-DISCOVERED: dropping this file in registers it, there is no
+// list to edit. Read bin/adapters/README.md first — every rule in
 // it is enforced or assumed by the rest of the pipeline.
 //
 // FINDING YOUR CITY'S PORTAL
@@ -35,6 +36,8 @@ const GEO_WHERE = "<GEO_FIELD>='<VALUE>'";  // e.g. "ZIP='00000'" or "DISTRICT I
 // join — sub-ZIP geography is forbidden (see config/privacy.json).
 
 // Categories: exact values of the category field, verified against a live query.
+const NAME = '<ADAPTER NAME>';              // must match the exported name below
+const ENDPOINT = SERVICE;                   // used in error records
 const CATEGORY_FIELD = '<CATEGORY_FIELD>';  // e.g. OFFENSE
 const CATEGORIES = {
   // exampleKey: 'EXACT VALUE IN THE FIELD',
@@ -67,7 +70,7 @@ async function count(where, label, ctx) {
       return j.count;
     } catch (e) {
       if (attempt === 2) {
-        ctx.addError('<ADAPTER NAME>', url, `${label}: ${e.message}`);
+        ctx.addError(NAME, url, `${label}: ${e.message}`);
         return null;   // null = not retrieved. Never substitute a guess or a zero.
       }
       await new Promise(res => setTimeout(res, 1500));
@@ -78,32 +81,98 @@ async function count(where, label, ctx) {
 const layerFields = async () => (await arcgisJson(`${SERVICE}/${LAYER}?f=json`)).fields.map(f => f.name);
 
 // Same month/day, prior year — the like-for-like comparison bound.
-const sameDayLastYear = week => `${Number(week.slice(0, 4)) - 1}${week.slice(4)}`;
+const sameDayLastYear = ymd => `${Number(ymd.slice(0, 4)) - 1}${ymd.slice(4)}`;
+const daysBetween = (a, b) =>
+  Math.round((new Date(`${b}T12:00:00Z`) - new Date(`${a}T12:00:00Z`)) / 86400000);
+const daysAgo = (ymd, n) =>
+  new Date(new Date(`${ymd}T12:00:00Z`).getTime() - n * 86400000).toISOString().slice(0, 10);
+
+// The newest date actually present. This is the anchor for every window, and it
+// is a publishable fact in its own right. Never substitute the portal's metadata:
+// a catalog `modified` date reflects file touches, not new rows.
+// CAUTION: confirm DATE_FIELD is a real date TYPE first (check `fields` from
+// `?f=json`). If it is stored as a STRING, ordering is lexicographic and
+// "9/7/2019" sorts as the newest record in a layer that runs to 2023 — derive
+// freshness from a numeric year field instead. This is common on government
+// ArcGIS layers.
+async function maxDate(field, where, ctx) {
+  const stats = encodeURIComponent(JSON.stringify(
+    [{ statisticType: 'max', onStatisticField: field, outStatisticFieldName: 'newest' }]));
+  const url = `${SERVICE}/${LAYER}/query?f=json&where=${enc(where)}&outStatistics=${stats}`;
+  try {
+    const j = await arcgisJson(url);
+    const v = j.features?.[0]?.attributes?.newest;
+    if (v == null) return null;
+    // ArcGIS date fields come back as epoch milliseconds.
+    return (typeof v === 'number' ? new Date(v) : new Date(String(v))).toISOString().slice(0, 10);
+  } catch (e) {
+    ctx.addError(NAME, url, `max(${field}): ${e.message}`);
+    return null;
+  }
+}
 
 // ------------------------------------------------------------------ the adapter
 export default {
-  name: '<ADAPTER NAME>',        // becomes the facts-file block name, e.g. 'crime'
+  name: NAME,                    // becomes the facts-file block name, e.g. 'crime'
   critical: true,
 
   async fetch(ctx) {
     const { week } = ctx;
-    const lastYear = sameDayLastYear(week);
-    const out = { geography: GEO_WHERE, asOf: week, priorPeriodEnd: lastYear };
+    const out = { geography: GEO_WHERE, asOf: week };
 
-    // Year-to-date total, and the prior-year same-period figure that makes it a
-    // comparison instead of a bare number. Adjust the where-clauses to how your
-    // layer models time (some portals split years across layers; some don't).
+    // ---- STEP 1: ASK THE DATA HOW CURRENT IT IS, AND ANCHOR TO THAT --------
+    // NEVER anchor a trailing window to the issue date. Any source with a
+    // reporting lag then puts fewer days of data in the newest window than in
+    // the one you compare it against, and manufactures a collapse that is
+    // arithmetically correct and completely false. A real case: 62 against 196,
+    // printed as "-68% in reported crime", entirely an artifact of a 13-day lag.
+    // Anchoring both windows to the newest RECORDED incident gave -29%.
+    const newest = await maxDate(DATE_FIELD, GEO_WHERE, ctx);   // max(DATE_FIELD)
+    if (!newest) {
+      ctx.addError(NAME, ENDPOINT, 'could not determine feed currency — no figures published');
+      return out;                                              // every value stays null
+    }
+    out.dataThrough = newest;
+    out.lagDays = daysBetween(newest, week);
+    // State the lag EVERY time. Do not put this behind a threshold: there is no
+    // lag at which the reader stops needing to know the window. A field adapter
+    // guarded this with `if (lag > 14)`, measured 13, and the guard never fired.
+    ctx.addRule(`${NAME}: data runs through ${out.dataThrough} (${out.lagDays} days behind the issue). ` +
+      `Name that window in print; never write "this week" over it.`);
+
+    // ---- STEP 2: IS A YEAR-OVER-YEAR COMPARISON EVEN AVAILABLE? -----------
+    // Many incident layers keep a ROLLING window (commonly ~12 months) and
+    // simply do not hold last year. Querying "before this date last year" then
+    // returns the handful of late-filed stragglers still hanging off the back
+    // of the window — a real case returned 16 against 1,493, which prints as a
+    // five-figure percentage increase. Measure retention before comparing.
+    const deepHistory = await count(
+      `${GEO_WHERE} AND ${DATE_FIELD} < DATE '${daysAgo(week, 400)}'`,
+      'retention probe: rows older than 400 days', ctx);
+    out.retentionIsRolling = deepHistory < 30;                 // tune to your volume
+
     out.total = await count(GEO_WHERE, 'total, current period', ctx);
-    out.totalPriorYear = await count(
-      `${GEO_WHERE} AND ${DATE_FIELD} < DATE '${lastYear}'`,
-      'total, prior year same period', ctx);
+
+    if (out.retentionIsRolling) {
+      out.totalPriorYear = null;
+      ctx.addRule(`${NAME}: the source keeps a rolling window and does NOT retain last year ` +
+        `(${deepHistory} rows older than 400 days). A year-over-year comparison is UNAVAILABLE — ` +
+        `do not compute or publish one; say the comparison is not possible from this source.`);
+    } else {
+      const lastYear = sameDayLastYear(newest);                // anchored to data, not to today
+      out.priorPeriodEnd = lastYear;
+      out.totalPriorYear = await count(
+        `${GEO_WHERE} AND ${DATE_FIELD} < DATE '${lastYear}'`,
+        'total, prior year same period', ctx);
+    }
 
     out.categories = {};
     for (const [key, value] of Object.entries(CATEGORIES)) {
       out.categories[key] = {
         now: await count(`${GEO_WHERE} AND ${CATEGORY_FIELD}='${value}'`, `${key}, current`, ctx),
-        priorYear: await count(
-          `${GEO_WHERE} AND ${CATEGORY_FIELD}='${value}' AND ${DATE_FIELD} < DATE '${lastYear}'`,
+        // null, not a number, when the source cannot answer the question
+        priorYear: out.retentionIsRolling ? null : await count(
+          `${GEO_WHERE} AND ${CATEGORY_FIELD}='${value}' AND ${DATE_FIELD} < DATE '${out.priorPeriodEnd}'`,
           `${key}, prior year`, ctx),
       };
     }

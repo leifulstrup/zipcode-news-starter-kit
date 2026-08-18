@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.10.0] — 2026-08-18
+
+Second field instance, `/find-sources` complete (6 adopted, 5 rejected, 4
+parked, one working adapter). Its lead finding is not a bug in any file — it is
+a gap in the threat model, and the most serious thing found in the kit so far.
+
+### Fixed
+- **CRITICAL (class): a fetched, arithmetically correct, gate-clean number that
+  is a false statement about the world.** Fetching guarantees the *value* is
+  real; it does not guarantee the *comparison*. Two instances hit on one
+  afternoon on a single adapter:
+  - **Window anchored to the issue date over a lagging source.** The newest
+    window silently holds fewer days of data than the one it is compared with.
+    Measured: 62 against 196, publishable as "reported crime down 68%" — the
+    real figure, with both windows anchored to `max(date)`, was −29%.
+  - **Year-over-year against a rolling-retention source.** The source keeps ~12
+    months and does not hold last year, so the prior-year query returns the few
+    late-filed stragglers still inside the window: 16 against 1,493, which
+    prints as a five-figure percentage increase.
+
+  Neither is fabrication, so `verify-issue` had nothing to say: both queries
+  succeeded, both figures were fetched, both computations were correct. Fixes:
+  **`_template-arcgis.mjs` now anchors every window to `max(date_field)`** and
+  **probes retention before computing any year-over-year**, emitting an
+  `agentRule` that forbids the comparison when the source is rolling rather
+  than silently computing a meaningless one. `verify-issue.mjs` gained two
+  warnings for the signatures (a measured window ending past `dataThrough`; a
+  prior-period figure under a fifth of the current one). `bin/adapters/README.md`
+  §9b and README philosophy point 1 now state plainly that **the window is where
+  the risk now lives**.
+- **Never threshold a provenance warning you would want stated every time.** A
+  field adapter guarded its incompleteness rule with `if (lagDays > 14)`,
+  measured 13, and the guard never fired — the threshold silently disabled the
+  only check that would have caught the bug. The template now states the lag
+  unconditionally.
+- **`data/facts/<week>.json` is now privacy-scanned** in the weekly workflow. It
+  is committed to the repo and adapters can pull coordinate fields; the daily
+  workflow already scanned its outputs, so the omission was an oversight — and
+  `privacy-scan.mjs`'s own header documents a coordinate that survived two
+  text-based scrubs inside a data file.
+- Both adapter templates said to "register it in `bin/adapters/index.mjs`" —
+  stale since v0.7.0's auto-discovery, and contradicting the registry file whose
+  hand-registration caused the four-silently-unhooked-adapters incident.
+
+### Changed
+- **`/find-sources` now requires an explicit keep-or-drop decision per standing
+  section**, rather than leaving it to the agent's judgment about whether the
+  list "fits". The shipped 11-section list is DC-derived and does not survive a
+  78k-person city: a field instance found three sections with no vetted source
+  behind them. A section with no source is a standing invitation to pad.
+- **"Does my ZIP cross municipalities" now names the Census ZCTA-to-Place
+  relationship file**, and warns that a spatial `intersects` query answers a
+  different question — it counts a shared boundary edge. In the field it
+  returned seven cities for a ZCTA lying 100% inside one of them, which would
+  have put the opposite of the truth into every issue forever.
+- **Freshness rule extended**: confirm the date field is a real date *type*
+  before trusting `max()` over it. A layer advertising yesterday's `modified`
+  date, whose string `M/D/YYYY` field sorts "9/7/2019" to the top, actually
+  stopped in 2023. Derive freshness from a numeric year when the date is a string.
+- ArcGIS Hub portals: the working search route is `orgId` from the portal page
+  then `arcgis.com/sharing/rest/search?q=orgid:<id>` — Hub v3's `filter[orgid]`
+  is rejected. Also: a `data.<county>.gov` portal may be ArcGIS Hub, not Socrata.
+
 ## [0.9.0] — 2026-08-18
 
 ### Added

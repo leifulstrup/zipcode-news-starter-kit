@@ -187,6 +187,44 @@ if (!facts) {
           `Have the adapter record dataThrough (max date present in the source) per bin/adapters/README.md §9.`);
       }
     }
+
+    // ---- WINDOW INTEGRITY -------------------------------------------------
+    // The class of failure the other gates cannot see: a number that was really
+    // fetched, by a query that really succeeded, computed correctly — and false,
+    // because the WINDOW was wrong. Fetching moved the failure mode from the
+    // value to the window. Two shapes, both found in the field on one afternoon:
+    //
+    //   1. A trailing window anchored to the ISSUE DATE over a source that lags.
+    //      The newest window silently contains fewer days of data than the one
+    //      it is compared against, and manufactures a collapse (a real case:
+    //      62 vs 196, "-68% crime", entirely an artifact of a 13-day lag).
+    //   2. A year-over-year comparison against a source with a ROLLING RETENTION
+    //      window, which does not hold last year. The prior-year query returns
+    //      the few late-filed stragglers still in the window and prints as a
+    //      five-figure increase (a real case: 1,493 vs 16).
+    //
+    // These are WARNs, not FATALs: the adapter may have a good reason, and a
+    // blunt rule here would train publishers to ignore it. But the class gets
+    // something mechanical, per gates-not-promises.
+    const win = value.measuredWindow;
+    if (win?.end && typeof value.dataThrough === 'string' && win.end > value.dataThrough) {
+      want(false,
+        `${block}: the measured window ends ${win.end} but the data only runs through ${value.dataThrough}. ` +
+        `A trailing window anchored past the newest record contains fewer days of data than its comparison ` +
+        `and manufactures a false decline. Anchor windows to max(date_field), never to the issue date. ` +
+        `See bin/adapters/README.md §9.`);
+    }
+    // A prior-period figure that is a small fraction of the current one is the
+    // signature of a rolling-retention source, not of a real surge.
+    const prior = value.priorYear ?? value.totalPriorYear ?? value.priorPeriod;
+    if (typeof prior === 'number' && typeof value.total === 'number' &&
+        prior > 0 && value.total > 50 && prior < value.total * 0.2) {
+      want(false,
+        `${block}: prior-period figure (${prior}) is under a fifth of the current one (${value.total}). ` +
+        `Before publishing that as a change, confirm the source RETAINS the full prior period — a rolling ` +
+        `12-month window returns only late-filed stragglers for "last year" and prints as a huge false increase. ` +
+        `If the source is rolling, the comparison is unavailable: say so rather than computing it.`);
+    }
   }
 
   // The failure that matters most: a figure the fetch could NOT get, asserted

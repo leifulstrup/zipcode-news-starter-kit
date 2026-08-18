@@ -159,6 +159,40 @@ it is. Three rules, all field-tested:
   part-week scores "quiet" on shape alone. If the window is not complete, say
   so and don't score it.
 
+## 9b. The window is now where the risk lives
+
+Fetching solved one problem and moved the failure mode. A fetched number is
+real; the **comparison around it** may still be invented. Two shapes, both found
+on one afternoon by one field instance, on its first adapter:
+
+**Anchor every trailing window to `max(date_field)`, never to the issue date.**
+If the source reports late, a window ending "today" holds fewer days of data
+than the window it is compared against. A real case: 62 incidents against 196,
+published as a 68% collapse in reported crime — entirely an artifact of a 13-day
+lag. Re-anchored to the newest recorded incident, both windows equally complete,
+the real figure was −29%.
+
+**Measure retention before computing a year-over-year change.** Many incident
+layers keep a rolling window (commonly ~12 months) and simply do not hold last
+year. "Count rows before this date last year" then returns the few late-filed
+stragglers still inside the window. A real case: 16 against 1,493, which prints
+as a five-figure percentage increase. Probe with a count of rows older than ~400
+days; if it is tiny, the source is rolling and **the comparison is unavailable** —
+emit an `agentRule` forbidding it rather than silently computing a meaningless
+one.
+
+Both numbers were genuinely fetched by queries that genuinely succeeded, and no
+gate can see either. `verify-issue.mjs` warns on the signatures (a window ending
+past `dataThrough`; a prior figure under a fifth of the current one), but the
+real defense is the adapter: it is the only place that knows what window the
+source can actually answer.
+
+**Never threshold a provenance warning you would want stated every time.** A
+field adapter guarded its incompleteness rule with `if (lagDays > 14)`, measured
+13, and the guard never fired — the threshold silently disabled the only check
+that would have caught the bug. There is no lag at which the reader stops
+needing to know the window. State it unconditionally.
+
 ## 10. Three ways a dataset can lack your ZIP — and the right fix for each
 
 1. **No geography field at all** (police districts, service areas): intersect

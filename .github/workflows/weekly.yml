@@ -266,7 +266,13 @@ jobs:
           echo "issue present: $(wc -c < "$F") bytes"
 
       - name: Privacy scan
-        run: node bin/privacy-scan.mjs "issues/${{ steps.date.outputs.week }}.html"
+        run: |
+          # Scan the FACTS FILE too, not just the issue: it is committed to the
+          # repo, adapters can pull coordinate and address fields, and the
+          # privacy-scan header documents a coordinate that survived two
+          # text-based scrubs inside a data file. Defence in depth for the exact
+          # failure that file exists to prevent. (Found by the 90706 instance.)
+          node bin/privacy-scan.mjs "issues/${{ steps.date.outputs.week }}.html" "data/facts/${{ steps.date.outputs.week }}.json"
 
       - name: Check the issue against the facts it was given
         run: node bin/verify-issue.mjs --week "${{ steps.date.outputs.week }}"

@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.9.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.10.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -117,7 +117,13 @@ hard way.
 1. **Every number is fetched, not asked for.** Deterministic scripts pull the data
    before the AI writes; the writing model must not contradict what was fetched and
    must admit what wasn't. Every time a figure had to be *right*, the fix was to
-   fetch it — a prompt instruction alone never moved the needle.
+   fetch it — a prompt instruction alone never moved the needle. **But fetching
+   guarantees the number is real, not that the comparison is.** Once the value is
+   fetched, the risk moves to the *window*: a trailing window anchored to today
+   over a source that reports late manufactures a collapse, and a year-over-year
+   query against a rolling-retention source manufactures a surge. Both are real
+   fetches, correct arithmetic, and false statements about the world — and no gate
+   can see them. `bin/adapters/README.md` §9 is where that battle is fought.
 2. **Gates, not promises.** A rule that can be enforced in code never lives only in
    the prompt. Two gates — privacy and publication promises — exit nonzero before
    anything is committed. **A failed run publishes nothing**, and last week's issue
