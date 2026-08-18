@@ -363,7 +363,12 @@ jobs:
           # nothing, so one missing directory stages nothing at all — and a
           # `git add -A` fallback would sweep in ANYTHING the agent touched,
           # including the rubric it is judged against.
-          for p in issues data addendum; do
+          # Re-render the architecture diagram from config before committing —
+          # a derived artifact kept fresh by machinery, not by habit (a stale
+          # hand-refreshed diagram is a documented failure of the reference
+          # implementation). Non-fatal: a diagram must never block an issue.
+          node bin/render-architecture.mjs || echo "::warning::architecture diagram re-render failed — not blocking the issue"
+          for p in issues data addendum docs/architecture.svg; do
             [ -e "$p" ] && git add "$p"
           done
           if git diff --cached --quiet; then

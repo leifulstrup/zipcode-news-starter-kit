@@ -71,9 +71,12 @@ passed the local gauntlet (/first-issue). If not, stop and send them there first
    ```
    gh variable set SITE_BASE_URL --body "https://<actual>.workers.dev"
    ```
-   Add that host to `config/sources.json` → `self`. If they ever want a custom
-   domain like `<zip>.news`, point at `docs/CUSTOM-DOMAIN.md` — it changes nothing
-   about this setup except names.
+   Add that host to `config/sources.json` → `self`, and set `site.config.json` →
+   `domain` to the same host so canonical URLs, the sitemap, and absolute feed
+   links switch on — then run `node build.mjs` and
+   `node bin/render-architecture.mjs` (the README diagram now shows the real
+   URL) and commit. If they ever want a custom domain like `<zip>.news`, point at
+   `docs/CUSTOM-DOMAIN.md` — it changes nothing about this setup except names.
 5. Optional: Cloudflare **Web Analytics** (free, cookieless, no consent banner
    needed — the kit's no-tracking stance is a feature; never add Google Analytics).
 

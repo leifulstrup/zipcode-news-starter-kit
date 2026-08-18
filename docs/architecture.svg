@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="442" viewBox="0 0 1120 442" role="img" aria-label="Architecture diagram">
+<style>
+  text { font-family: Georgia, 'Times New Roman', serif; fill: #1a1a1a; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .h { font-size: 15px; font-weight: bold; fill: #7a2e2e; letter-spacing: .4px; }
+  .k { font-size: 14px; font-weight: bold; }
+  .v { font-size: 13px; fill: #444; }
+  .t { font-size: 19px; font-weight: bold; }
+  .cap { font-size: 13.5px; font-style: italic; fill: #444; }
+  .foot { font-size: 13px; font-weight: bold; fill: #7a2e2e; }
+</style>
+<rect width="1120" height="442" fill="#fbfaf7"/>
+<text class="t" x="25" y="34">00000 News (Experimental) — how ZIP 00000 gets its weekly brief</text>
+<line x1="25" y1="46" x2="1095" y2="46" stroke="#7a2e2e" stroke-width="2"/>
+<rect x="25" y="78" width="330" height="268" fill="#ffffff" stroke="#c9c4b8" rx="6"/>
+<text class="h mono" x="39" y="101">1 · YOUR MACHINE — Claude Code</text>
+<line x1="37" y1="112" x2="343" y2="112" stroke="#c9c4b8"/>
+<text class="k mono" x="39" y="132">/setup</text>
+<text class="v" x="39" y="149">interview → config, privacy patterns</text>
+<text class="k mono" x="39" y="176">/find-sources</text>
+<text class="v" x="39" y="193">discover · vet · approve sources</text>
+<text class="k mono" x="39" y="220">/first-issue</text>
+<text class="v" x="39" y="237">prove the pipeline locally</text>
+<text class="k mono" x="39" y="264">/go-live</text>
+<text class="v" x="39" y="281">connect GitHub + Cloudflare</text>
+<text class="k mono" x="39" y="308">/add-source</text>
+<text class="v" x="39" y="325">grow the registry over time</text>
+<text class="foot mono" x="39" y="370">git push ▸</text>
+<path d="M 357 212 L 381 212" stroke="#7a2e2e" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="385" y="78" width="330" height="268" fill="#ffffff" stroke="#c9c4b8" rx="6"/>
+<text class="h mono" x="399" y="101">2 · GITHUB — private repo (Actions)</text>
+<line x1="397" y1="112" x2="703" y2="112" stroke="#c9c4b8"/>
+<text class="k mono" x="399" y="132">Friday cron</text>
+<text class="v" x="399" y="149">fetch-data — adapters, no guessing</text>
+<text class="k mono" x="399" y="176">write issue</text>
+<text class="v" x="399" y="193">the ONLY model step (Claude default)</text>
+<text class="k mono" x="399" y="220">gates</text>
+<text class="v" x="399" y="237">privacy-scan · verify-issue — or no publish</text>
+<text class="k mono" x="399" y="264">then</text>
+<text class="v" x="399" y="281">normalize → PDF → build → addendum</text>
+<text class="k mono" x="399" y="308">watchdogs</text>
+<text class="v" x="399" y="325">smoke · publication-check · sources</text>
+<text class="foot mono" x="399" y="370">commit to main = the deploy trigger ▸</text>
+<path d="M 717 212 L 741 212" stroke="#7a2e2e" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="745" y="78" width="330" height="268" fill="#ffffff" stroke="#c9c4b8" rx="6"/>
+<text class="h mono" x="759" y="101">3 · CLOUDFLARE — workers.dev (free)</text>
+<line x1="757" y1="112" x2="1063" y2="112" stroke="#c9c4b8"/>
+<text class="k mono" x="759" y="132">Workers Builds</text>
+<text class="v" x="759" y="149">watches main on every push</text>
+<text class="k mono" x="759" y="176">build + deploy</text>
+<text class="v" x="759" y="193">node build.mjs → wrangler deploy</text>
+<text class="k mono" x="759" y="220">readers get</text>
+<text class="v" x="759" y="237">HTML · PDF · RSS — no JS, no tracking</text>
+<text class="k mono" x="759" y="264">site</text>
+<text class="v" x="759" y="281">zipcode-news-00000.&lt;account&gt;.workers.dev</text>
+<text class="k mono" x="759" y="308">feedback</text>
+<text class="v" x="759" y="325">no inbox configured (optional)</text>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a2e2e"/></marker></defs>
+<text class="cap" x="25" y="402">The git repo is the handoff: GitHub never holds a Cloudflare credential; Cloudflare never runs a model.</text>
+<text class="cap" x="25" y="422">A failed gate commits nothing — the deploy never triggers and last week's issue stays live. Diagram generated from site.config.json by bin/render-architecture.mjs.</text>
+</svg>

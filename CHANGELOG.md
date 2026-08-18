@@ -17,6 +17,18 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.4.0] — 2026-08-18
+
+### Added
+- **Config-driven architecture diagram in the README**: `bin/render-architecture.mjs`
+  generates `docs/architecture.svg` from `site.config.json`, so after `/setup` the
+  diagram shows *your* publication's name, ZIP, publish day, URL, and
+  feedback-inbox state. `/setup` and `/go-live` regenerate it when config changes,
+  and the weekly workflow re-renders it before every commit — a derived artifact
+  kept fresh by machinery, not habit (the stale hand-refreshed diagram was a
+  documented failure of the reference implementation). Deterministic output with a
+  label-overflow guard.
+
 ## [0.3.0] — 2026-08-18
 
 ### Added

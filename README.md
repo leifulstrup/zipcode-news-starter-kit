@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.3.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.4.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -55,6 +55,22 @@ The four skills, in order:
 
 Prefer doing it by hand? The same ground is covered in `docs/SETUP-GITHUB.md` and
 `docs/SETUP-CLOUDFLARE.md`.
+
+## How it works
+
+![Architecture: your machine runs the Claude Code onboarding skills and pushes to a private GitHub repo; GitHub Actions fetches data, has the model write the issue, gate-checks it, builds HTML/PDF/RSS and commits; Cloudflare Workers Builds watches main and deploys the static site to readers](docs/architecture.svg)
+
+Three systems, one handoff. Your machine (with Claude Code) configures and grows
+the newsletter; GitHub Actions researches, writes, gate-checks, and builds each
+issue on schedule; Cloudflare serves whatever is committed. **The git repo is the
+only connection between them** — GitHub never holds a Cloudflare credential,
+Cloudflare never runs a model, and a failed quality gate commits nothing, so the
+deploy never fires and last week's issue stays live.
+
+This diagram is generated from your own `site.config.json` by
+`bin/render-architecture.mjs` — after you run `/setup` it shows *your*
+publication's name, ZIP, publish day, and URL, and the weekly workflow
+re-renders it so it can never go stale.
 
 ## The philosophy, briefly
 

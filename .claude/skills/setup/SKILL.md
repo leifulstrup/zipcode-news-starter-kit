@@ -96,7 +96,13 @@ With approvals in hand:
 3. Update `wrangler.toml` → `name` to the workerName.
 4. Update the cron line in `.github/workflows/weekly.yml` to the computed `cronUtc`,
    and keep `site.config.json.cronUtc` identical to it.
-5. Run `node bin/doctor.mjs` to confirm the configuration is coherent. Fix anything
+5. Run `node bin/render-architecture.mjs` — it regenerates the README's
+   architecture diagram (`docs/architecture.svg`) from the config just written, so
+   the picture now shows *their* publication name, ZIP, publish day, and URL.
+   Re-run it any time `site.config.json` changes (the weekly workflow also
+   re-renders it automatically). Show them the diagram — it is the best
+   30-second explanation of what they just configured.
+6. Run `node bin/doctor.mjs` to confirm the configuration is coherent. Fix anything
    it reports before moving on.
 
 ## 4. Show them their site
