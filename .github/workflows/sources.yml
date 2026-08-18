@@ -1,0 +1,113 @@
+name: Source integrity
+
+# Two jobs that answer two different questions, neither of which the weekly run
+# can answer about itself:
+#
+#   probe       — are the sources still there, and do they still mean what we
+#                 think? Runs early in the week so a dead endpoint is known days
+#                 before the publish run, not at publish time.
+#   retrospect  — did the numbers we already printed stay true? Re-asks the same
+#                 sources the same questions for windows already published and
+#                 diffs the answers. It is the only quality check in the kit that
+#                 does not depend on the judgment of the model that wrote the
+#                 issue.
+#
+# Both are driven by the adapters in bin/adapters/ (probe() and retrospective()
+# hooks). With no adapters enabled, both scripts exit green with a notice — a
+# fresh kit must not open alarms about machinery it has not grown yet.
+#
+# The probe runs here, on a GitHub runner, deliberately: runners have open
+# egress, and an endpoint established from documentation inside a sandbox has
+# not been established at all.
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'    # Monday midday UTC — probe early in the week
+    - cron: '0 12 1 * *'    # 1st of the month — the retrospective pass
+  workflow_dispatch:
+    inputs:
+      retrospect:
+        description: 'Also run the retrospective (re-check past editions)'
+        type: boolean
+        default: true
+      min_age_days:
+        description: 'Only re-check editions at least this many days old'
+        type: string
+        default: '21'
+      commit:
+        description: 'Commit the probe and retrospective records'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write      # to commit the ledger
+  issues: write        # to report a dead source
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Probe every standing source
+        id: probe
+        run: node bin/probe-sources.mjs --json
+
+      # Runs even if the probe failed: knowing which past figures moved is useful
+      # precisely when something has changed underneath us.
+      - name: Retrospective — re-check what we already printed
+        if: always() && (github.event_name == 'schedule' || github.event.inputs.retrospect == 'true')
+        run: |
+          node bin/source-retrospective.mjs \
+            --min-age-days "${{ github.event.inputs.min_age_days || '21' }}" \
+            --write
+
+      - name: Commit the record
+        if: always() && (github.event_name == 'schedule' || github.event.inputs.commit == 'true')
+        run: |
+          git config user.name  "newsletter bot"
+          git config user.email "actions@users.noreply.github.com"
+          # One `git add` per path, guarded. `git add a b c` fails WHOLESALE if
+          # any single pathspec matches nothing — with no retrospective written
+          # yet, that once staged nothing at all and silently swallowed the first
+          # real probe result.
+          for p in data/probes data/retrospective data/source-reliability.md; do
+            [ -e "$p" ] && git add "$p"
+          done
+          if git diff --cached --quiet; then
+            echo "::notice::nothing changed — no commit"
+            exit 0
+          fi
+          git commit -m "chore(sources): probe and retrospective $(date -u +%Y-%m-%d)"
+          # The weekly job pushes to this branch too. Rebase rather than force.
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            echo "push $i failed, retrying"
+            sleep $((i * 5))
+          done
+          echo "::error::could not push the source ledger after 3 attempts"
+          exit 1
+
+      - name: Report a dead source
+        if: failure() && steps.probe.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create source-down --color D93F0B \
+            --description "A standing data source failed its liveness probe" 2>/dev/null || true
+          # One open issue at a time.
+          if [ -z "$(gh issue list --label source-down --state open --limit 1 --json number --jq '.[].number')" ]; then
+            gh issue create --label source-down \
+              --title "A standing data source failed its probe" \
+              --body "\`bin/probe-sources.mjs\` reported a critical failure. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          A critical failure means the next issue would be built on a source that is not there. The failure policy degrades rather than corrupts — the missing value becomes null and the issue says it could not be sourced — but it should be fixed before the next publish day.
+
+          Check, in order: whether the layer/dataset id changed; whether a field was renamed; whether the service moved. \`data/probes/\` has the last good run for comparison."
+          else
+            echo "::notice::source-down issue already open — not filing another"
+          fi

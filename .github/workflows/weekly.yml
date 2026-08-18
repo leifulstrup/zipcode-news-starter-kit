@@ -1,0 +1,373 @@
+name: Weekly issue
+
+# The whole publication cycle, in the cloud, with no dependency on any laptop
+# being awake:
+#
+#   fetch facts (script)  →  write the issue (AGENT)  →  gates  →  build + PDF
+#   →  commit  →  Cloudflare deploys on the push
+#
+# The agent step is deliberately the only model-specific part. Everything either
+# side of it is plain Node, so swapping models is one input change and does not
+# touch the data, the build, the verification or the deploy.
+#
+# Cloudflare watches this repo's default branch — a WORKER with static assets
+# ([assets] directory = "./public" in wrangler.toml), NOT Cloudflare Pages. The
+# build and deploy commands differ between the two, and getting them backwards
+# produces a green build that deploys nothing. This workflow needs NO deploy
+# credential — it commits, Cloudflare notices. The only secret required is the
+# model key. A green run here means the issue was BUILT; only the smoke test
+# proves it was DEPLOYED.
+
+on:
+  schedule:
+    # KEEP THIS LINE IN SYNC with "cronUtc" in site.config.json — the /setup skill
+    # rewrites both together. GitHub cron is UTC and does NOT follow daylight
+    # saving: a 20:00 UTC Friday is 16:00 US Eastern in summer and 15:00 in
+    # winter. Shift the hour or accept the drift.
+    - cron: '0 20 * * 5'
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: 'Which model writes the issue'
+        type: choice
+        options: [claude, gemini]
+        default: claude
+      model:
+        description: 'Claude model (ignored on the gemini path)'
+        type: choice
+        options:
+          - claude-sonnet-5
+          - claude-opus-5
+          - claude-fable-5
+        default: claude-sonnet-5
+      week:
+        description: 'Issue date (YYYY-MM-DD). Blank = today.'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Build everything but do not commit'
+        type: boolean
+        default: false
+
+concurrency:
+  group: weekly-issue
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # commit the issue back; the commit is the deploy trigger
+  id-token: write        # required by claude-code-action's default GitHub App auth
+  issues: write          # open a review issue when the addendum flags something
+
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45   # the real spend guard: bounds a runaway agent by wall-clock
+
+    env:
+      AGENT: ${{ github.event.inputs.agent || vars.DEFAULT_AGENT || 'claude' }}
+      WEEK:  ${{ github.event.inputs.week || '' }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve the issue date
+        id: date
+        run: |
+          WEEK="${WEEK:-$(date -u +%F)}"
+          echo "week=$WEEK" >> "$GITHUB_OUTPUT"
+          echo "Issue date: $WEEK"
+
+      # ---------------------------------------------------------------
+      # 1. FACTS — deterministic. No model involved.
+      # ---------------------------------------------------------------
+      - name: Fetch the week's data
+        run: node bin/fetch-data.mjs --week "${{ steps.date.outputs.week }}"
+
+      - name: Show what was retrieved
+        run: |
+          node -e "
+            const f = require('./data/facts/${{ steps.date.outputs.week }}.json');
+            const skip = new Set(['week','generatedFor','generator','zip','geographyNote','queriedAt','errors','notes','agentRules']);
+            const blocks = Object.keys(f).filter(k => !skip.has(k));
+            console.log('data blocks:', blocks.length ? blocks.join(', ') : '(none — no adapters enabled)');
+            console.log('failed queries:', f.errors.length);
+            for (const e of f.errors) console.log('  -', e.source, ':', e.message);
+            for (const n of f.notes) console.log('note:', n);
+          "
+
+      # ---------------------------------------------------------------
+      # 2. THE ISSUE — the only model-specific step.
+      #    Both branches read the same brief and the same facts file, and both
+      #    must write the same output path. Nothing downstream knows which ran.
+      # ---------------------------------------------------------------
+      - name: Write the issue (Claude)
+        if: env.AGENT == 'claude'
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Pass ONLY the credential that is actually set. An unset secret
+          # interpolates to an EMPTY STRING, not to "absent" — so leaving
+          # `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}` active while
+          # only the OAuth token is configured hands the action a blank API key,
+          # which it may prefer over the valid token and then fail to
+          # authenticate with. To bill an API key instead of a Claude
+          # subscription, comment out the OAuth line and uncomment the key line.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          #
+          # Without this the action prints "full output hidden for security" and
+          # the real error is invisible. Leave it on until you have had several
+          # clean runs, then turn it off if you prefer quieter logs.
+          show_full_output: true
+          # Plain instruction, NOT a slash command: `/write-issue` only resolves
+          # from .claude/commands/, and this kit ships a *skill*. The Skill tool
+          # must also be in --allowedTools or it is silently denied — the only
+          # trace is `permission_denials` in the result block.
+          prompt: |
+            Read prompts/write-issue.md and follow it exactly.
+            The issue date is ${{ steps.date.outputs.week }}.
+            The fetched facts are in data/facts/${{ steps.date.outputs.week }}.json.
+            Write issues/${{ steps.date.outputs.week }}.html and nothing else.
+
+            THIS IS A NON-INTERACTIVE RUN. Nobody is watching and nothing will wake
+            you up. The process exits the moment your turn ends, so:
+            - Do all research yourself, inline, with WebSearch and WebFetch.
+            - Do NOT delegate to sub-agents or background tasks. There is no
+              callback; anything still running when you stop is simply killed.
+            - Do NOT end your turn until issues/${{ steps.date.outputs.week }}.html
+              exists on disk. Verify it with Read before you finish.
+            A turn that ends without that file having been written is a failed run.
+          # NOTE: everything inside the block scalar below is passed to the CLI as
+          # arguments. A '#' line in there is NOT a YAML comment — it becomes argv.
+          # Keep commentary out here, where YAML actually ignores it.
+          #
+          # --max-turns 250: 60 is not enough — a real run upstream was cut off at
+          # turn 61 with the issue half-written. Every fetch, read and edit is a
+          # turn; ten sections with per-section sourcing need well over a hundred.
+          # `timeout-minutes: 45` is the real spend guard and bounds by wall-clock
+          # instead of truncating a draft that was going fine.
+          #
+          # Task is disallowed because a headless run has no callback: sub-agents
+          # are killed when the main turn ends and their work is lost.
+          claude_args: |
+            --model ${{ github.event.inputs.model || vars.DEFAULT_MODEL || 'claude-sonnet-5' }}
+            --max-turns 250
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash,WebSearch,WebFetch,TodoWrite,Skill"
+            --disallowedTools "Task"
+
+      # The alternative model path. Same brief, same facts, same output path, and
+      # the SAME non-interactive instructions — the two branches must stay
+      # equivalent or "swap the model with one input" quietly becomes untrue.
+      - name: Write the issue (Gemini)
+        if: env.AGENT == 'gemini'
+        uses: google-github-actions/run-gemini-cli@v0
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            Read prompts/write-issue.md and follow it exactly.
+            The issue date is ${{ steps.date.outputs.week }}.
+            The fetched facts are in data/facts/${{ steps.date.outputs.week }}.json.
+            Write issues/${{ steps.date.outputs.week }}.html and nothing else.
+
+            THIS IS A NON-INTERACTIVE RUN. Nobody is watching and nothing will wake
+            you up. The process exits the moment your turn ends, so:
+            - Do all research yourself, inline.
+            - Do NOT delegate to sub-agents or background tasks; anything still
+              running when you stop is simply killed.
+            - Do NOT end your turn until issues/${{ steps.date.outputs.week }}.html
+              exists on disk. Read the file back to verify before you finish.
+            A turn that ends without that file having been written is a failed run.
+
+      # ---------------------------------------------------------------
+      # 3. GATES — refuse to publish a bad issue, whichever model wrote it.
+      #    Gates exit non-zero BEFORE the commit step, and the commit is the
+      #    deploy trigger — so a failed gate publishes nothing and last week's
+      #    issue stays live.
+      # ---------------------------------------------------------------
+      - name: The agent must have produced an issue
+        run: |
+          F="issues/${{ steps.date.outputs.week }}.html"
+          if [ ! -s "$F" ]; then
+            echo "::error::$F was not written. The agent step produced nothing; failing rather than publishing an empty week."
+            exit 1
+          fi
+          echo "issue present: $(wc -c < "$F") bytes"
+
+      - name: Privacy scan
+        run: node bin/privacy-scan.mjs "issues/${{ steps.date.outputs.week }}.html"
+
+      - name: Check the issue against the facts it was given
+        run: node bin/verify-issue.mjs --week "${{ steps.date.outputs.week }}"
+
+      # ---------------------------------------------------------------
+      # 4. ARTIFACTS — deterministic again.
+      # ---------------------------------------------------------------
+      # Normalize BEFORE the PDF and the site build. The PDF is rendered from the
+      # bare issue and the uploaded artifact IS the bare issue, so a transform
+      # that only ran inside build.mjs would reach the website and nothing else.
+      # Normalizing here keeps the artifact, the PDF and the site identical.
+      - name: Normalize links in the issue
+        run: node bin/normalize-issue.mjs "issues/${{ steps.date.outputs.week }}.html"
+
+      # Two separate installs, and both are needed: the npm PACKAGE (so
+      # `import { chromium } from 'playwright'` resolves) and the BROWSER BINARY.
+      # `npx playwright install` alone fetches the binary but leaves the repo
+      # without the module — html-to-pdf.mjs then dies on ERR_MODULE_NOT_FOUND
+      # after a 28-second browser download already succeeded.
+      - name: Install Playwright and Chromium for the PDF
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Render the PDF
+        run: |
+          FOOTER=$(node -p "const c=require('./site.config.json'); \
+            (c.experimental ? c.siteName + ' (Experimental)' : c.siteName) + \
+            (c.domain ? ' · ' + c.domain : '') + ' · week ending ${{ steps.date.outputs.week }}'")
+          node bin/html-to-pdf.mjs \
+            "issues/${{ steps.date.outputs.week }}.html" \
+            "issues/${{ steps.date.outputs.week }}.pdf" \
+            "$FOOTER"
+
+      - name: Build the site
+        run: node build.mjs
+
+      # The editor's addendum — operational detail that must never clutter the
+      # issue. addendum/ is never read by build.mjs, so none of it can reach the
+      # site.
+      - name: Build the editor's addendum
+        id: addendum
+        env:
+          ADDENDUM_MD: ${{ runner.temp }}/addendum.md
+        run: node bin/build-addendum.mjs --week "${{ steps.date.outputs.week }}"
+
+      - name: The new issue must actually appear in the build
+        run: |
+          W="${{ steps.date.outputs.week }}"
+          for f in public/archive/index.html public/feed.xml "public/$W/index.html"; do
+            grep -q "$W" "$f" || { echo "::error::$W missing from $f"; exit 1; }
+          done
+          echo "archive, feed and permalink all contain $W"
+
+      - name: Upload artifacts for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-${{ steps.date.outputs.week }}
+          path: |
+            issues/${{ steps.date.outputs.week }}.*
+            data/facts/${{ steps.date.outputs.week }}.json
+            addendum/${{ steps.date.outputs.week }}.html
+          retention-days: 30
+
+      # ---------------------------------------------------------------
+      # 5. PUBLISH — the commit is the deploy trigger.
+      # ---------------------------------------------------------------
+      # The judged must not be able to edit its own judge. The agent runs with
+      # repo-wide Write/Edit, and QA-QC/ has to be in the repo so the agent can
+      # READ the standard it is held to — so nothing structural stops a run from
+      # softening a rubric band to match its own output. A prohibition in the
+      # prompt is a request; this is the check. Research/ (if present) is included
+      # because quietly editing the reasoning behind a rule has the same effect as
+      # editing the rule.
+      - name: The agent must not have modified the rubric
+        run: |
+          DIRTY=$(git status --porcelain QA-QC Research 2>/dev/null || true)
+          if [ -n "$DIRTY" ]; then
+            echo "::error::This run modified files under QA-QC/ or Research/. The agent is judged"
+            echo "::error::against those and must never write to them. Nothing will be committed."
+            echo "$DIRTY"
+            exit 1
+          fi
+          echo "::notice::QA-QC/ and Research/ untouched by this run"
+
+      - name: Commit
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "newsletter bot"
+          git config user.email "actions@users.noreply.github.com"
+          # One `git add` per path, each guarded by an existence test. Two reasons:
+          # `git add a b c` fails WHOLESALE when any single pathspec matches
+          # nothing, so one missing directory stages nothing at all — and a
+          # `git add -A` fallback would sweep in ANYTHING the agent touched,
+          # including the rubric it is judged against.
+          for p in issues data addendum; do
+            [ -e "$p" ] && git add "$p"
+          done
+          if git diff --cached --quiet; then
+            echo "nothing changed — not committing"
+            exit 0
+          fi
+          git commit -m "Issue of ${{ steps.date.outputs.week }} (${AGENT})"
+
+          # The runner checked out a SHA and then worked for many minutes. Any
+          # push to main during that window makes this push fail "fetch first" —
+          # discarding the whole edition at the very last step, after the
+          # research, the PDF and both gates. Rebase onto main-as-it-is-NOW and
+          # retry. The run only ever ADDS files, so a rebase is normally clean; a
+          # genuine conflict aborts loudly rather than resolving itself wrongly.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "::error::Rebase conflict against origin/main. The issue is built and uploaded as a run artifact — recover it from there rather than re-running the agent, which costs another full research pass."
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt — the host will build and deploy"
+              exit 0
+            fi
+            echo "::notice::push rejected on attempt $attempt (main moved again) — retrying"
+            sleep 5
+          done
+          echo "::error::Could not push after 3 attempts. The built issue is in the run artifacts."
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          W="${{ steps.date.outputs.week }}"
+          {
+            echo "## Issue of $W"
+            echo ""
+            echo "- Agent: \`$AGENT\`"
+            echo "- Facts: \`data/facts/$W.json\`"
+            if [ -f "data/facts/$W.json" ]; then
+              echo "- Failed queries: $(node -p "require('./data/facts/$W.json').errors.length")"
+            fi
+            echo "- Issue: $( [ -s "issues/$W.html" ] && echo 'written' || echo 'MISSING' )"
+            echo "- PDF: $( [ -s "issues/$W.pdf" ] && echo 'rendered' || echo 'missing' )"
+            echo ""
+            if [ -f "${{ runner.temp }}/addendum.md" ]; then
+              echo "### Editor's addendum — check before trusting"
+              echo ""
+              cat "${{ runner.temp }}/addendum.md"
+              echo ""
+            fi
+            if [ -n "${{ vars.SITE_BASE_URL }}" ]; then
+              echo "Live at ${{ vars.SITE_BASE_URL }}/$W/ once the host finishes building."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # GitHub emails the repo owner when an issue is opened — that is the
+      # notification channel. No extra credential, no mail server.
+      - name: Open a review issue when something needs a human
+        if: always() && steps.addendum.outputs.high != '0' && steps.addendum.outputs.high != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          W="${{ steps.date.outputs.week }}"
+          # Create the label on first use rather than making the repo owner
+          # remember to. Already-exists is a normal outcome, not an error.
+          gh label create review \
+            --color B60205 \
+            --description "An issue draft needs a human look before publishing" 2>/dev/null || true
+          gh issue create \
+            --title "Review before publishing — issue of $W (${{ steps.addendum.outputs.high }} to check first)" \
+            --body-file "${{ runner.temp }}/addendum.md" \
+            --label "review" || {
+              echo "::warning::could not open a review issue — the checklist is in the run summary"
+            }

@@ -1,0 +1,30 @@
+{
+  "zip": "00000",
+  "siteName": "00000 News",
+  "experimental": true,
+  "tagline": "A weekly brief for ZIP code 00000",
+  "city": "Anytown",
+  "state": "ST",
+  "timezone": "America/New_York",
+  "domain": "",
+  "workerName": "zipcode-news-00000",
+  "contactEmail": "",
+  "publishDay": "Friday",
+  "cronUtc": "0 20 * * 5",
+  "volume": 1,
+  "colors": { "accent": "#7a2e2e", "paper": "#fbfaf7", "ink": "#1a1a1a" },
+  "sections": [
+    "The Week in One Page",
+    "Local Government",
+    "Development & Land Use",
+    "Transit & Getting Around",
+    "Schools & Youth",
+    "Public Safety",
+    "Real Estate & Market Trends",
+    "Dining & Retail",
+    "Around the Neighborhood",
+    "Parks & Recreation",
+    "Mark Your Calendar"
+  ],
+  "geographyNote": ""
+}

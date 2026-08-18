@@ -1,0 +1,21 @@
+{
+  "name": "zipcode-news-starter-kit",
+  "private": true,
+  "type": "module",
+  "description": "Starter kit for a weekly, AI-written, gate-checked neighborhood brief for a US ZIP code, published as a static site on Cloudflare",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node build.mjs && npx --yes serve public -l 8788",
+    "deploy": "node build.mjs && npx --yes wrangler deploy",
+    "doctor": "node bin/doctor.mjs",
+    "verify": "node bin/verify-issue.mjs",
+    "fetch": "node bin/fetch-data.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

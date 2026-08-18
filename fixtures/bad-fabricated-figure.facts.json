@@ -1,0 +1,16 @@
+{
+  "week": "2026-01-09",
+  "queriedAt": "2026-01-08T21:00:00Z",
+  "zip": "00000",
+  "errors": [
+    {
+      "source": "parks ice-rink status",
+      "url": "https://parks.example.gov/rink-status",
+      "message": "HTTP 500 after one retry"
+    }
+  ],
+  "notes": [],
+  "agentRules": [
+    "The parks rink-status query FAILED. Either say rink hours could not be sourced, or omit every claim that depends on them. Never assert a figure that was not retrieved."
+  ]
+}

@@ -1,0 +1,123 @@
+name: Publication check
+
+# The failure mode with no artifacts.
+#
+# The weekly workflow proves an issue was BUILT. The smoke test proves the site
+# is SERVING something. Neither can see a week that never happened at all —
+# GitHub silently drops scheduled runs during platform degradation and never
+# retries them. Land that on a publish evening and there is no issue, no failed
+# run, no notification, nothing in the Actions list: the first person to notice
+# would be a reader. The smoke test cannot substitute — a site happily serving
+# LAST week's issue passes it; it has no notion of what week it is.
+#
+# So this asks the one question nothing else asks — does the artifact for the
+# week that should exist, exist? — the day after the publication window. Two
+# crons, because an outage that swallows the first check must not also swallow
+# the check; the one-open-issue guard stops the pair double-filing.
+#
+# It also does the diagnosis the script cannot: whether a weekly run ever
+# started. "The cron never fired" and "a run started and died" look identical
+# from the filesystem and need opposite responses.
+
+on:
+  schedule:
+    - cron: '0 14 * * 6'   # Saturday 14:00 UTC — the day after a Friday publish.
+                           # If /setup moves publishDay, move BOTH of these too.
+    - cron: '0 14 * * 0'   # Sunday backstop.
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Issue date to check (YYYY-MM-DD). Blank = last publish day.'
+        type: string
+        default: ''
+      base:
+        description: 'Also check the live site served it (blank = SITE_BASE_URL)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read          # to ask whether a weekly run ever started
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Which week are we checking?
+        id: week
+        run: |
+          W="${{ github.event.inputs.week }}"
+          if [ -z "$W" ]; then
+            # Reuse the script's own date arithmetic instead of re-implementing
+            # it in shell. Two definitions of "the week that should exist" WILL
+            # disagree on the day it matters.
+            W=$(node bin/check-published.mjs --print-expected-week)
+          fi
+          echo "week=$W" >> "$GITHUB_OUTPUT"
+          echo "::notice::checking $W"
+
+      - name: Did the issue get published?
+        id: check
+        run: |
+          BASE="${{ github.event.inputs.base || vars.SITE_BASE_URL }}"
+          if [ -n "$BASE" ]; then
+            node bin/check-published.mjs --week "${{ steps.week.outputs.week }}" --base "$BASE"
+          else
+            node bin/check-published.mjs --week "${{ steps.week.outputs.week }}"
+          fi
+
+      # Only runs when the check failed. The two verdicts need opposite fixes.
+      - name: Diagnose — did a weekly run even start?
+        id: diagnose
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          RUNS=$(gh run list --workflow=weekly.yml --limit 20 \
+                   --json createdAt,status,conclusion,event,url \
+                   --jq "[.[] | select(.createdAt >= \"${W}T00:00:00Z\")]")
+          COUNT=$(echo "$RUNS" | jq 'length')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" = "0" ]; then
+            echo "verdict=NO RUN WAS EVER STARTED for $W. The scheduled trigger did not fire. GitHub drops scheduled runs during degradation and does not retry them, so this is very likely a platform incident rather than a bug in this repository." >> "$GITHUB_OUTPUT"
+            echo "action=Dispatch the catch-up run: \`gh workflow run weekly.yml -f week=$W\`" >> "$GITHUB_OUTPUT"
+          else
+            LAST=$(echo "$RUNS" | jq -r '.[0] | "\(.conclusion // .status) — \(.url)"')
+            echo "verdict=$COUNT weekly run(s) exist for $W. The most recent: $LAST. So the trigger fired and the cycle failed somewhere before the commit step — this is ours, not GitHub's." >> "$GITHUB_OUTPUT"
+            echo "action=Read that run's log. If the issue was built, recover it from the run's artifact rather than re-running the agent — a re-run costs a full research pass and will not reproduce the same edition." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: File it
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          gh label create not-published --color B60205 \
+            --description "An issue that should exist does not" 2>/dev/null || true
+          # One open issue at a time: two crons must not manufacture two reports
+          # of the same silence.
+          EXISTING=$(gh issue list --label not-published --state open --limit 1 --json number --jq '.[].number')
+          BODY="\`bin/check-published.mjs\` found no publishable artifact for **$W**.
+
+          **Diagnosis.** ${{ steps.diagnose.outputs.verdict }}
+
+          **What to do.** ${{ steps.diagnose.outputs.action }}
+
+          If the week was skipped deliberately, add \`$W\` to \`data/skipped-weeks.txt\` — do not silence this check. A check that cries wolf gets ignored, and an ignored check is worse than none.
+
+          Check run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -z "$EXISTING" ]; then
+            gh issue create --label not-published --title "No issue published for $W" --body "$BODY"
+          else
+            echo "::notice::not-published issue #$EXISTING already open — commenting instead"
+            gh issue comment "$EXISTING" --body "$BODY"
+          fi

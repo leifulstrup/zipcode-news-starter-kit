@@ -1,0 +1,11 @@
+# Deliberately skipped publication dates, one YYYY-MM-DD per line.
+#
+# This is the legitimate-quiet path for bin/check-published.mjs: a holiday or a
+# planned break is not a failure, and without this file the check would file the
+# same alarm every week until someone silenced it. A silenced check is worse than
+# no check.
+#
+# NEVER add a date here to quiet a real failure — dispatch the catch-up run
+# instead:  gh workflow run weekly.yml -f week=YYYY-MM-DD
+#
+# Lines starting with # are comments.

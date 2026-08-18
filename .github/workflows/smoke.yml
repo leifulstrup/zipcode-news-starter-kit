@@ -1,0 +1,82 @@
+name: Site smoke test
+
+# The weekly workflow proves an issue was BUILT. Nothing else proves it was
+# DEPLOYED — the host builds asynchronously after the commit, long after the run
+# has finished and gone green, so every failure mode past `git push` is invisible
+# without this. It runs an hour after the weekly job, and daily, against the real
+# public URL. It is the only check in the system that looks at what a reader
+# actually sees.
+#
+# The base URL comes from the repository variable SITE_BASE_URL (Settings →
+# Secrets and variables → Actions → Variables). The /go-live skill sets it when
+# it walks you through the Cloudflare setup:
+#   gh variable set SITE_BASE_URL --body "https://<worker>.<account>.workers.dev"
+# Until it is set, this workflow skips with a notice instead of failing — a red X
+# on a site that does not exist yet teaches people to ignore red X's.
+
+on:
+  schedule:
+    # KEEP roughly one hour after weekly.yml's cron, and adjust together.
+    - cron: '0 21 * * 5'   # one hour after the weekly run publishes
+    - cron: '0 13 * * *'   # and once a day, to catch silent rot
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base URL to test (blank = the SITE_BASE_URL repo variable)'
+        type: string
+        default: ''
+      week:
+        description: 'Also check this issue date (YYYY-MM-DD)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  issues: write        # to report a broken site
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Is there a site to test yet?
+        id: base
+        run: |
+          BASE="${{ github.event.inputs.base || vars.SITE_BASE_URL }}"
+          if [ -z "$BASE" ]; then
+            echo "::notice::SITE_BASE_URL is not set and no base was given — the site is not live yet, so there is nothing to smoke-test. /go-live sets the variable when you deploy."
+            echo "base=" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test the site
+        if: steps.base.outputs.base != ''
+        run: |
+          node bin/smoke-test.mjs \
+            --base "${{ steps.base.outputs.base }}" \
+            ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }}
+
+      - name: Report a broken site
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create site-down --color B60205 \
+            --description "The published site failed its smoke test" 2>/dev/null || true
+          # One open issue at a time — a daily cron must not manufacture a daily
+          # report of the same problem.
+          if [ -z "$(gh issue list --label site-down --state open --limit 1 --json number --jq '.[].number')" ]; then
+            gh issue create --label site-down \
+              --title "Site smoke test failing" \
+              --body "The published site failed its smoke test. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Nothing here diagnoses itself — check, in order: the last Cloudflare deployment matches the last commit; the Worker's custom domain (if any) is still attached; DNS still resolves. docs/OPERATIONS.md has the failure signatures."
+          else
+            echo "::notice::site-down issue already open — not filing another"
+          fi
