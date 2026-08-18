@@ -55,3 +55,27 @@ Test every new gate against a real failing case before trusting it —
 `bin/doctor.mjs` runs all gates against `fixtures/` (one known-good issue, several
 known-bad ones) and fails if any gate mis-fires in either direction. When a
 validator passes on input you know is bad, **the validator is the bug.**
+
+## The regression check, and what a fire means
+
+After archiving, `measure-issue.mjs` compares the new measurement against the
+previous edition's and warns when an interest-breadth or actionability
+sub-metric drops to zero from non-zero. It exists because a rubric fix that
+lives in one issue's text is a patch, not a fix — the next issue regresses it
+with every gate green (field-tested).
+
+Expect false positives, and treat them as fair price. The check's first real
+fire was one: the *better-written* issue scored lower because the metric's
+vocabulary missed its phrasing. The correct response, in order:
+
+1. **Investigate before fixing.** Read the two issues. Is the dimension really
+   gone, or did the metric's vocabulary miss it?
+2. **If the metric missed it, widen the metric — never the prose.** Inserting a
+   magic phrase to satisfy a counter is gaming the instrument; the rubric's
+   whole value is that it measures something real.
+3. **If the dimension is really gone, the fix goes in `prompts/write-issue.md`**,
+   not in this issue's text — that is the lesson the check was built on.
+
+A false positive costs a five-minute investigation. A false negative costs the
+thing the check exists for. That asymmetry is why the watched metrics stay
+loose and advisory rather than precise and blocking.

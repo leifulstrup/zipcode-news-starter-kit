@@ -38,10 +38,18 @@ A verdict is not the end of the entry — route the fix to where it belongs:
 
 ## The "(Experimental)" bar
 
-The masthead label becomes eligible to come off after **eight consecutive issues
-with no wrong claim and at most one misleading claim per issue**, with this log
-public. Not before, and never by preference — usefulness and accuracy are open
-empirical questions until the record answers them.
+The masthead label becomes eligible to come off after **eight consecutive
+PUBLISHED issues with no wrong claim and at most one misleading claim per
+issue**, with this log public. Not before, and never by preference — usefulness
+and accuracy are open empirical questions until the record answers them.
+
+Pre-publication calibration issues count toward nothing here. Log their checks
+(they are good practice and good history — mark them "pre-publication"), but
+the eight-issue counter starts at the first issue readers could actually reach.
+The label is a promise about the published record; a record nobody could read
+proves nothing to the people the promise is made to. An instance that writes
+many local calibration issues must not arrive at the bar without ever having
+published.
 
 Meeting the bar does not remove the label by itself. When the record qualifies,
 whoever notices (you, or an agent reviewing this log) **proposes** the change with

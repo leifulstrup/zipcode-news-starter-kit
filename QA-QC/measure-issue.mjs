@@ -72,7 +72,13 @@ const civicBodies = n(/\b(?:city council|county council|commission|school board|
 // ---------- Q4 interest breadth ----------
 const constituencies = {
   renters:   n(/\brent(?:er|ers|ing|al)\b|tenant/gi),
-  owners:    n(/\bhomeowner|owner-occup|property (?:tax|value)|own or rent/gi),
+  // Widened after a field false-negative: an issue that EXPLICITLY contrasted
+  // "renters rather than owners" scored 0 because bare "owners" didn't match,
+  // while a weaker issue scored 1 off an incidental "property values". The bare
+  // \bowners?\b will over-match occasionally (business owners); this metric is
+  // advisory, so a false positive costs five minutes and a false negative costs
+  // the thing the metric exists for.
+  owners:    n(/\bhomeowner|home ?owner|owner-occup|\bowners?\b|property (?:tax|value)|own or rent/gi),
   carFree:   n(/without a car|car-free|walk(?:ing|able)|bus|shuttle|metro|transit|bike|cycl/gi),
   families:  n(/famil(?:y|ies)|student|parent|school/gi),
   adjacent:  n(/\b(?:county line|city limits|across the (?:line|border)|neighboring (?:town|county|city))\b/gi),

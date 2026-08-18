@@ -206,6 +206,15 @@ internal link.
   agency's own notice. When a claim traces to an official announcement, read the
   announcement: the write-up tells you what happened, the record tells readers
   what to do about it.
+- **An agency publishes two kinds of page about the same thing — read both.**
+  Dated notices say what is happening this week; the **standing project page**
+  says what shape the thing is: total duration, phases, why, alert sign-ups.
+  Citing only the notice produces the smallest true version of the story —
+  "a closure is scheduled" when the project page says sixteen months (a real
+  miss, corrected in the field). Before writing "could not be sourced" about a
+  project's scope or duration, check whether a standing page exists. The notice
+  is just what the standing page is currently emitting. Each hop away from the
+  authoritative artifact loses the parts that make the story worth publishing.
 - **Some facts have no primary source and that is fine.** A shop opening, a team's
   schedule, a restaurant closing — cite the reporting, name the outlet, move on. Do
   not manufacture false authority for an ordinary fact.

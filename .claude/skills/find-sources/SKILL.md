@@ -191,7 +191,11 @@ the user approve, reject, or park **each one**.
   reliability, jurisdiction confirmation), the user's verdict and reason.
 - **`data/sources-ranked.md`** — the approved roster, in the tier/score/cadence/
   Insight/Known-failures structure the file documents. Trusted-outlet answers from
-  the interview seed the narrative tiers. For each entry also record: **access
+  the interview seed the narrative tiers. For agency sources, **register the
+  standing project/program page, not the dated notice** — the standing page
+  carries the shape of the thing (duration, phases, alert sign-ups) while a
+  notice only says what is happening this week; put the standing page on the
+  cadence and note notices as what it currently emits. For each entry also record: **access
   shape** (API / CSV / RSS / scrape / manual-only), **retention window** (and
   `archive-on-run` if the source deletes its own history), and **how jurisdiction
   was confirmed**. Institutional names rot — school districts reorganize, agencies

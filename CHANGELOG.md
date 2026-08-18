@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.7.3] — 2026-08-18
+
+### Fixed
+- **Owners metric vocabulary** (measure-issue Q4): an issue that explicitly
+  contrasted "renters rather than owners" scored 0 while a weaker issue scored
+  1 off an incidental "property values". Bare `owners?` now matches; the
+  documented tradeoff is that a false positive costs a five-minute
+  investigation and a false negative costs what the metric exists for.
+
+### Added
+- **Regression-fire protocol** (QA-QC/README.md): expect false positives and
+  treat them as fair price — investigate before fixing; if the metric missed
+  the phrasing, widen the metric, never the prose (inserting a magic phrase to
+  satisfy a counter is gaming the instrument); if the dimension is really gone,
+  the fix goes in the brief.
+- **Standing-page doctrine** (brief §4a + find-sources registry guidance): an
+  agency publishes dated notices and standing project pages about the same
+  thing, and they are different sources — citing only the notice produced "a
+  closure is scheduled" where the project page said sixteen months. Register
+  the standing page on the cadence; the notice is what it currently emits. Each
+  hop from the authoritative artifact loses the parts that make the story worth
+  publishing.
+- **The "(Experimental)" bar counts PUBLISHED issues only**
+  (data/accuracy-log.md): pre-publication calibration checks are logged but do
+  not advance the eight-issue counter — the label is a promise about the
+  published record, and a record nobody could read proves nothing to the people
+  the promise is made to.
+
 ## [0.7.2] — 2026-08-18
 
 ### Added
