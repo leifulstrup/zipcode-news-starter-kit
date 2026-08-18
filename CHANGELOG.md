@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.1] — 2026-08-18
+
+### Added
+- **`bin/adapters/_reference-lag-aware.mjs`** — the first field instance's
+  adapter mechanics as a documented reference (underscore-prefixed, never
+  auto-loaded): the lag-zero contract in code, the lag-artefact-zero guard, the
+  withheld verdict (a rate comparison across windows of different day-of-week
+  composition is invalid regardless of the denominator), point-in-polygon
+  geography with the filter-broke-vs-genuinely-nothing distinction, and all
+  four probe shapes.
+- **The semantic probe** (probe shape 4, adapters README §2): assert every
+  assumption the adapter's *meaning* depends on — a classification regex that
+  quietly stops matching collapses a split into one misleading total with all
+  gates green. Plus: string conventions are per-dataset, never per-agency.
+- **Calls-for-service doctrine** (editorial brief §4d): dispatch feeds mix
+  officer-initiated records with public calls (46% officer-initiated in one
+  measured week); the raw total rises when patrols increase. Determine the
+  fraction before publishing; never present the undifferentiated total as
+  neighborhood demand.
+
 The kit's version lives in `package.json` and is tagged in git (`v<version>`).
 Every improvement lands here: **patch** for fixes and doc corrections, **minor**
 for new capabilities or new rules the skills/gates enforce, **major** for changes

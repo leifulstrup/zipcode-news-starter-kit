@@ -284,6 +284,15 @@ the second-best move; the best is not printing it.
 - **Service-request (311) data measures who calls.** Call propensity tracks tenure,
   age and engagement. Never compare your ZIP's request volume to another ZIP's; you
   would be measuring the population, not the potholes.
+- **A calls-for-service total mixes police deployment with neighborhood demand.**
+  Dispatch/CAD feeds include officer-initiated records — scene markers, traffic
+  stops — alongside calls from the public, and the mix is rarely documented (a
+  measured week in one field instance ran 46% officer-initiated). The raw total
+  *rises when patrols increase*, so publishing it as "residents calling for help"
+  is wrong in a way that flatters activity. Before publishing any
+  calls-for-service figure, determine what fraction is officer-initiated; report
+  the public-initiated count, or both, and never the undifferentiated total
+  dressed as demand.
 - **Recorded sales are the record; broker and portal indices are models.** Lead
   housing coverage with the government's recorded-sales data where an adapter fetches
   it. A model-based home-value index (Zillow ZHVI and its kin) is **direction only**

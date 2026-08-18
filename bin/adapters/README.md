@@ -63,10 +63,19 @@ a dead or renamed endpoint on Monday, not inside Friday's unattended publish run
 **Probe the trap, not just the happy path**: once you've discovered an upstream
 quirk (a padded field, a lying timestamp), write a probe that asserts the quirk
 still exists — if the upstream fixes it, your workaround becomes the bug, and the
-probe is what tells you. **Documented is not the same as working** — schema pages
-can tell you a field's name but only a live query tells you which date-literal
-dialect the server accepts. Probe the real service before trusting anything from
-it in print.
+probe is what tells you. And **probe your semantic assumptions, not just
+liveness**: if your adapter's meaning depends on a classification (a regex over
+call types, a category mapping, a code list), assert that the classification
+still resolves — an upstream rename otherwise collapses your split into one
+misleading total with every gate green. A probe should assert every assumption
+the adapter's *meaning* depends on, not just that bytes came back. Also:
+**string conventions are per-dataset, never per-agency** — the same portal has
+served one dataset space-padded and its sibling unpadded; verify each dataset
+independently. **Documented is not the same as working** — schema pages can tell
+you a field's name but only a live query tells you which date-literal dialect
+the server accepts. Probe the real service before trusting anything from it in
+print. Worked examples of all four probe shapes, contributed from the first
+field instance: `_reference-lag-aware.mjs` in this directory.
 
 ## 3. Distinguish "queried and empty" from "failed"
 
