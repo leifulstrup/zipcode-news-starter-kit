@@ -58,7 +58,8 @@ The digest watches RSS/Atom feeds from **already-approved sources only**:
    note: "feed added for daily digest").
 3. Write the approved ones to `config/feeds.json` (`{name, url, type, notes}`).
 4. If an adapter should be diffed daily (e.g. a permits count), set
-   `daily: true` on its registry entry in `bin/adapters/index.mjs` — but warn:
+   `daily: true` on the adapter object in its own file under `bin/adapters/`
+   (adapters are auto-discovered; there is no registry list to edit) — but warn:
    most weekly data series don't move daily; feeds are usually the better
    signal.
 

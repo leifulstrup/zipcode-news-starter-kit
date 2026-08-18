@@ -37,11 +37,26 @@ Run each and show the user what it checks and what it said:
 ```
 node bin/privacy-scan.mjs issues/<WEEK>.html
 node bin/verify-issue.mjs --week <WEEK>
+node QA-QC/measure-issue.mjs issues/<WEEK>.html
 node bin/normalize-issue.mjs issues/<WEEK>.html
-node bin/html-to-pdf.mjs issues/<WEEK>.html issues/<WEEK>.pdf "<siteName> — <WEEK>"   # needs playwright; skip with a note if not installed
+node bin/html-to-pdf.mjs issues/<WEEK>.html issues/<WEEK>.pdf "<siteName> — <WEEK>"
 node build.mjs
 node bin/doctor.mjs
 ```
+
+Notes on two of these:
+
+- **measure-issue is advisory, not a gate — read its counts anyway.** They are
+  cheap, deterministic evidence and they catch editorial failures the gates
+  cannot: a `renters: 0` on an issue whose brief requires naming renters' stake
+  means the draft wrote *around* the requirement without meeting it (a real
+  first-issue finding — the phrase "people who do not have a yard of their own"
+  reads neutral and isn't). A zero can also be a measurement gap (identifier
+  shapes vary by jurisdiction), so investigate zeros, don't just chase them.
+- **The PDF step needs Playwright's browser, which a fresh clone does not have**
+  (`npm install && npx playwright install chromium`). If it's not installed,
+  the step exits with instructions — expect that, say so, and offer to install
+  or skip. A skipped PDF here is fine; CI installs its own.
 
 If a gate fails: that is the system working. Fix the issue (not the gate) and
 re-run. Explain each failure to the user in one plain sentence — the gates are the

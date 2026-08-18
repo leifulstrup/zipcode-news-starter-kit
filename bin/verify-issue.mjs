@@ -172,6 +172,21 @@ if (!facts) {
       want(appears(value.total),
         `${block}.total = ${value.total} was fetched but does not appear in the issue. Deliberate omission is fine; silent divergence is not.`);
     }
+    // The lag-zero trap (bin/adapters/README.md §9): a source that lags returns
+    // a true 0 for a window it has not covered yet, and "0 this week" printed
+    // from it is a fabricated claim, not a missing one.
+    if (typeof value.total === 'number' && value.total === 0) {
+      if (typeof value.dataThrough === 'string' && value.dataThrough < week) {
+        want(false,
+          `${block}.total = 0 but the source's data only runs through ${value.dataThrough} (issue week ${week}). ` +
+          `This is a lag zero, not a quiet week — the issue must name the window the data actually covers, ` +
+          `never say "none this week". See bin/adapters/README.md §9.`);
+      } else if (value.dataThrough === undefined) {
+        want(false,
+          `${block}.total = 0 with no dataThrough field — an honest zero and a lag zero are indistinguishable. ` +
+          `Have the adapter record dataThrough (max date present in the source) per bin/adapters/README.md §9.`);
+      }
+    }
   }
 
   // The failure that matters most: a figure the fetch could NOT get, asserted

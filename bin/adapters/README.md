@@ -16,8 +16,11 @@ moved into a fetcher. Start from a template:
   city GIS: crime layers, 311, parcels, zoning)
 - `_template-socrata.mjs` — Socrata portals (`data.<city>.gov` sites with SoQL)
 
-Copy one to a real name, fill in the endpoint and fields, then register it in
-`index.mjs`. Then hold it to these rules — every one of them is a scar, not a
+Copy one to a real name, fill in the endpoint and fields, and it registers
+itself — `index.mjs` auto-discovers every non-underscore `.mjs` file in this
+directory (helper modules that are not adapters must start with `_`). Your file
+must `export const adapter = { name, critical, fetch, ... }` or export it as
+default. Then hold it to these rules — every one of them is a scar, not a
 preference.
 
 ## 1. Null means "not retrieved" — never guess, never zero
@@ -39,11 +42,31 @@ Assert what the answer should *look like*:
 - the count is plausible for your geography (a parcel query returning 12 rows for
   a ZIP with 5,000 homes means the filter broke, not that the neighborhood shrank).
 
+Four traps confirmed in the field, each a 200 that means failure:
+
+- **Portal metadata lies about freshness.** A catalog's `updatedAt` can reflect
+  file touches, not new data — datasets have carried a current `updatedAt` while
+  the newest actual record was years old. Never trust the stamp: query
+  `max(<date_field>)` on the data itself.
+- **Padded fields make equality filters return zero.** Government feeds
+  routinely pad string columns (`'Harbor '` in a 20-char field, `'05'` for `5`),
+  so `WHERE name='Harbor'` returns 0 rows with HTTP 200 — indistinguishable from
+  a quiet week. Prefer `LIKE 'x%'` or a numeric/ID filter over equality on any
+  name column, and cross-check every filter against an unfiltered group-by once.
+- **A 200 with an empty body** is the same failure as a 200 with zero rows —
+  some feeds return nothing unless a full browser User-Agent is sent.
+- **Bot-blocked (403) is not dead** — classify the source manual-only rather
+  than removing it.
+
 Put these same assertions in your `probe()` hook so `bin/probe-sources.mjs` finds
 a dead or renamed endpoint on Monday, not inside Friday's unattended publish run.
-**Documented is not the same as working** — schema pages can tell you a field's
-name but only a live query tells you which date-literal dialect the server accepts.
-Probe the real service before trusting anything from it in print.
+**Probe the trap, not just the happy path**: once you've discovered an upstream
+quirk (a padded field, a lying timestamp), write a probe that asserts the quirk
+still exists — if the upstream fixes it, your workaround becomes the bug, and the
+probe is what tells you. **Documented is not the same as working** — schema pages
+can tell you a field's name but only a live query tells you which date-literal
+dialect the server accepts. Probe the real service before trusting anything from
+it in print.
 
 ## 3. Distinguish "queried and empty" from "failed"
 
@@ -103,7 +126,46 @@ One retry with a short pause clears most of it (both templates include the
 pattern). After the retry, record the error and move on — a partial facts file
 with honest nulls beats a failed run.
 
-## 9. The optional hooks
+## 9. A fetched zero is a claim — date-stamp what the data actually covers
+
+The null-vs-error contract (§1) protects against failed fetches. It does not
+protect against the subtler lie: **a query that succeeds and truly returns `0`
+because the source lags.** A permits feed running a week behind returns zero
+permits for "this week" every week; printed, that becomes "no permits were issued
+here this week" — a fabricated statement, not a missing one. Sources with
+multi-week reporting lag make a nominal weekly window *always* empty. An honest
+zero and a lag zero are opposite claims, and a bare `total: 0` cannot say which
+it is. Three rules, all field-tested:
+
+- **Every count block includes `dataThrough`**: the max date actually present in
+  the source (query it — §2's freshness rule), so downstream tools can see that
+  "0 through Tuesday" is not "0 for the week". `bin/verify-issue.mjs` warns when
+  a block reports a zero total while its `dataThrough` predates the issue week.
+- **When the source lags, measure the last complete window it covers** and emit
+  an `agentRule` forcing the writer to name that window ("the week of …, the
+  most recent complete week in the data") instead of "this week".
+- **Withhold verdicts on partial windows.** Dividing a 4.5-day count by 7 gets
+  the denominator right and the comparison still wrong — many series have strong
+  day-of-week composition (service requests collapse on weekends), so any
+  part-week scores "quiet" on shape alone. If the window is not complete, say
+  so and don't score it.
+
+## 10. Three ways a dataset can lack your ZIP — and the right fix for each
+
+1. **No geography field at all** (police districts, service areas): intersect
+   the source's own districts against your ZIP's boundary (the Census ZCTA
+   polygon) once, and filter by the resulting district list.
+2. **A real ZIP column**: filter on it directly. The easy case.
+3. **Address text that carries the ZIP only sporadically** — the dangerous one:
+   text-matching the ZIP silently under-returns, text-matching the place name
+   both under- and over-returns (real in-ZIP addresses may carry the big city's
+   name), and a bounding box over-returns from neighboring areas. Geocode or
+   point-in-polygon against the ZCTA boundary instead.
+
+Standing rule: **never trust a place name or a bounding box where a boundary
+test is available.**
+
+## 11. The optional hooks
 
 - `probe()` → returns `[{ name, critical, run: async () => detail }]`. Run weekly
   by `bin/probe-sources.mjs`; a critical failure blocks nothing by itself but

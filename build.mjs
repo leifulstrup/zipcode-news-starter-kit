@@ -104,6 +104,11 @@ const CHROME_CSS = `
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
     font-size:12.5px;color:#767676;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .issuebar a{color:${ACCENT}}
+  /* The reading column. pageFromIssue() guarantees a .wrap exists (it injects
+     one when the issue didn't bring its own), and this rule guarantees it
+     means something: without a max-width, desktop body copy runs the full
+     viewport — ~200 chars/line at 1280px — and no gate can see it. */
+  .wrap{max-width:760px;margin:0 auto;padding:32px 24px 72px}
   @media(max-width:520px){.sitenav .in,.sitefoot,.issuebar{padding-left:16px;padding-right:16px}}
 /* ---------- mobile typography ----------
    Issues are authored for a 760px desktop column and a Letter print page. This
@@ -274,6 +279,18 @@ ${canonical ? `<meta property="og:url" content="${canonical}">` : ''}
 </div>`;
   html = html.replace('<body>', `<body>\n${bar}`);
   html = html.replace('</body>', `${siteFooter(m.pdf ? m.date : null)}\n</body>`);
+  // The reading column. The chrome CSS styles `.wrap` (max-width, mobile
+  // padding) but an issue that doesn't carry its own would otherwise render
+  // body copy at full viewport width — ~200 characters a line on a desktop
+  // monitor, and no gate can see it (found by the first field instance, whose
+  // first issue shipped that way). If the writer already emitted a .wrap,
+  // leave it alone; if not, wrap everything between the issue bar and the
+  // site footer. The chrome bar and footer stay full-bleed by design.
+  if (!/class="[^"]*\bwrap\b/.test(html)) {
+    html = html
+      .replace(/(<div class="issuebar">[\s\S]*?<\/div>)/, `$1\n<div class="wrap">`)
+      .replace(/<div class="sitefoot">/, `</div>\n<div class="sitefoot">`);
+  }
   return outboundNewTab(html);
 }
 

@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.6.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.7.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -162,15 +162,35 @@ gates, field-test fixes — and each improvement ships as a version on the
 no git connection back to the template, so upstream improvements never arrive on
 their own.
 
-To check for and pull updates, paste this to Claude in your repo folder:
+To check for and pull updates, **copy this whole box and paste it to Claude** in
+your repo folder — it works even if your copy is so old it predates the update
+mechanism itself:
 
-> Read `.claude/skills/update-kit/SKILL.md` and follow it.
+```text
+My repo was created from the zipcode-news-starter-kit GitHub template
+(https://github.com/leifulstrup/zipcode-news-starter-kit) and may be several
+versions behind. Please update it:
 
-It connects your repo to the template (one time), tells you what versions you're
-behind and what each one adds — *before* changing anything — then merges the
-update while protecting everything that's yours: your config, your source
-registry and logs, your published issues, your schedules. It finishes by running
-the kit's health checks and telling you what new capability to try first.
+1. If .claude/skills/update-kit/SKILL.md exists in this repo, read it and
+   follow it exactly.
+
+2. If it does NOT exist (my copy predates it), fetch the instructions from
+   upstream and follow those instead:
+     git remote add template https://github.com/leifulstrup/zipcode-news-starter-kit.git
+       (if that says the remote already exists, that's fine)
+     git fetch template
+     git show template/main:.claude/skills/update-kit/SKILL.md
+
+Either way: before merging anything, tell me which versions I'm behind and
+what each one adds, and wait for my OK. My own configuration, sources, data,
+published issues, and schedules must survive the update unchanged.
+```
+
+The skill connects your repo to the template (one time), previews what you're
+missing *before* changing anything, then merges the update while protecting
+everything that's yours: your config, your source registry and logs, your
+published issues, your schedules. It finishes by running the kit's health checks
+and telling you what new capability to try first.
 
 Safe to run any time; if you're current, it says so and stops. Compare your
 `package.json` version against the Releases page whenever you're curious.

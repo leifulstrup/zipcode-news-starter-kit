@@ -83,7 +83,11 @@ const constituencies = {
 // ---------- Q5 actionability ----------
 const datesWithTime = n(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}[^.]{0,40}?\b\d{1,2}(?::\d{2})?\s?(?:a\.m\.|p\.m\.|am|pm)/gi);
 const bareDates = n(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\b/g);
-const dockets = n(/\b(?:Case|Docket|Bill|Order|Application|Resolution|Permit|Petition)\s?(?:No\.?\s?)?[\dA-Z][\d\-.A-Z]{2,}/g);
+// Widened after field testing: big-city record systems use Project/File/Council
+// File (CF) numbers that serve the reader identically to a docket number. Even
+// so, a zero here can be a measurement gap rather than an editorial failure —
+// check what identifier shape YOUR jurisdiction uses before treating 0 as a miss.
+const dockets = n(/\b(?:Case|Docket|Bill|Order|Application|Resolution|Permit|Petition|Project|File|Council File|CF)\s?(?:No\.?\s?)?[\dA-Z][\d\-.A-Z]{2,}/g);
 const deadlines = n(/deadline|comment period|by (?:the )?\w+ \d{1,2}|closes? (?:on )?\w+ \d{1,2}|due (?:by|on)/gi);
 const contacts = n(/mailto:|@[\w.-]+\.\w+|call \d|\(\d{3}\)|contact the/gi);
 const openData = n(/open ?data|dataset|data portal|\bAPI\b/gi);

@@ -100,9 +100,11 @@ dozen or more states. **A dataset that merely name-matches the town is not vette
 Before recommending any source:
 
 1. Confirm the ZIP's true city and county (cross-check against census/USPS ZIP
-   lookups, not just memory). Ask whether the ZIP contains **more than one
-   municipality** — common in rural areas, where one ZIP spans several towns. Each
-   town in the footprint has its own offices, agendas, and records; note them all.
+   lookups, not just memory). Check whether the ZIP's boundary crosses **more
+   than one municipality** — common everywhere, not just rural areas: an urban
+   ZIP's polygon can clip three cities and two police departments. Each
+   jurisdiction in the footprint has its own offices, agendas, and records; note
+   them all.
 2. Confirm the source's publisher is the government (or outlet) of THAT city/county/
    state — right state, right county, and the ZIP actually inside the covered
    boundary. For county-named domains, check the **state token in the domain
@@ -130,13 +132,28 @@ Three hard rules learned in field testing:
 - Apply jurisdiction checks to **API responses too**, not just web pages — federated
   catalogs (Socrata especially) can return another city's datasets mixed into a
   state portal's results.
+- **Abbreviations and slugs collide like place names do.** A correct domain with
+  a plausible slug is not jurisdiction evidence: the same initials can mean two
+  different councils on the same official site, and a two-letter token reads as
+  a neighborhood council in one city and a state everywhere else. **Confirm a
+  civic body by an address or boundary it publishes** (its meeting location
+  inside your ZIP, its posted boundary map) — never by its name, initials, or
+  URL alone.
 
 ## 4. Test live, then explain
 
 For each promising dataset: fetch it. Confirm the ZIP or jurisdiction is actually
-covered, confirm it updates (look at the newest record's date), and note the access
-shape (API endpoint, CSV, RSS, HTML page). A 200 with zero rows where rows are
-expected is a failure, not a pass. Field-tested refinements:
+covered, confirm it updates — **by querying the newest record's date from the
+data itself (`max(<date_field>)`), never by trusting the portal's `updatedAt`
+metadata**: catalog stamps reflect file touches, and datasets have carried a
+current `updatedAt` while the newest actual record was years old (on Socrata the
+two routinely disagree by years). Note the access shape (API endpoint, CSV, RSS,
+HTML page). A 200 with zero rows where rows are expected is a failure, not a
+pass — and so is a **200 with an empty body** (some feeds return nothing without
+a full browser User-Agent). Beware **padded fields**: government feeds pad name
+columns and zero-pad codes, so an equality filter can return 0 rows with HTTP
+200 and look exactly like a quiet week — prefer `LIKE`/numeric filters and
+cross-check against an unfiltered group-by once. Field-tested refinements:
 
 - **One plausible row is not coverage — check the volume.** A wrong-jurisdiction
   dataset can still return a stray plausible-looking row for your area (a

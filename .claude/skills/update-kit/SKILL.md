@@ -38,16 +38,39 @@ Two kinds of files exist in an instance:
 
 - **Theirs (never overwritten by an update):** `site.config.json`,
   `config/*.json`, `data/**` (registry, logs, facts, daily state), `issues/**`,
-  `addendum/**`, `wrangler.toml`, `docs/architecture.svg`, and any cron lines in
-  `.github/workflows/*.yml` that /setup or /enable-daily customized.
-- **The kit's (updates should win):** `bin/**`, `build.mjs`, `QA-QC/**`,
-  `.claude/skills/**`, `docs/**` (except architecture.svg), `fixtures/**`,
-  `prompts/**`, `package.json`, `CHANGELOG.md`, workflow files apart from their
-  cron lines.
+  `addendum/**`, `wrangler.toml`, adapter files the instance wrote under
+  `bin/adapters/` (anything that is not `index.mjs`, `README.md`, or a
+  `_template-*`), and any cron lines in `.github/workflows/*.yml` that /setup or
+  /enable-daily customized.
+- **The kit's (updates should win):** `bin/**` apart from instance adapters,
+  `build.mjs`, `QA-QC/**`, `.claude/skills/**`, `docs/**`, `fixtures/**`,
+  `prompts/**`, `README.md` (template documentation — but ask if the user
+  customized theirs), `package.json`, `CHANGELOG.md`, workflow files apart from
+  their cron lines.
+- **Derived, conflict is irrelevant:** `docs/architecture.svg` — take either
+  side; step 4 regenerates it from config anyway.
 
-`prompts/write-issue.md` is the one judgment call: if the user has customized
-their editorial brief, a conflict there is real editorial work — walk them
-through it hunk by hunk rather than auto-resolving.
+Three hand-merge cases — never blind-checkout these:
+
+1. **`prompts/write-issue.md`** when the user customized their editorial brief —
+   that conflict is real editorial work; walk them through it hunk by hunk.
+2. **`data/lessons-learned.md`** — dual-owned by design: Part 1 (standing rules)
+   is inherited kit content that upstream improves; Part 2 (the dated log) is
+   the instance's irreplaceable history. Merge Part 1 from the kit, keep Part 2
+   entirely theirs.
+3. **`bin/adapters/index.mjs` on instances older than v0.7.0** — before v0.7.0
+   this file was where instances hand-registered their adapters, and taking the
+   kit's copy SILENTLY UNHOOKS EVERY ADAPTER while all gates stay green (a real
+   incident). From v0.7.0 the file auto-discovers adapter files, so: take the
+   kit's new index.mjs, then make sure each of the instance's adapter files
+   exports its adapter object (`export const adapter = {...}` or default) —
+   discovery picks them up with no list to edit. **Count the adapters before
+   and after** (`node bin/fetch-data.mjs` prints the count; so does
+   `bin/probe-sources.mjs`): if the count fell, stop and fix before committing.
+
+For workflow files: take the kit's file wholesale, then re-patch the instance's
+cron lines — the kit side usually carries other changes a hunk-level "ours"
+would lose.
 
 ## 3. Merge
 
@@ -56,7 +79,10 @@ git merge template/main --allow-unrelated-histories --no-edit
 ```
 
 (`--allow-unrelated-histories` is required: a template copy and the template
-share no commit ancestry. This is expected, not a problem.)
+share no commit ancestry. This is expected, not a problem. Also expected:
+**every file the instance has ever touched will conflict** — twenty add/add
+conflicts on a lightly-customized instance is normal for unrelated histories,
+not a sign anything went wrong. Work the list calmly with the ownership rule.)
 
 On conflicts, resolve by the ownership rule above: `git checkout --ours` for
 their files, `git checkout --theirs` for kit files, hunk-by-hunk for a
@@ -76,10 +102,17 @@ node bin/doctor.mjs
 node build.mjs
 node bin/next-step.mjs
 node bin/render-architecture.mjs
+node bin/probe-sources.mjs   # instances with adapters: the check most likely
+                             # to catch a broken merge — run it every time
 ```
 
+(Some of these arrive WITH the update itself — an instance coming from an early
+version won't have had `next-step.mjs` or `render-architecture.mjs` before the
+merge. Run them after, and don't read their earlier absence as a failure.)
+
 A green doctor after a merge is the point of the fixture harness — trust it over
-optimism. If the new version's CHANGELOG mentions migration notes, follow them.
+optimism. Confirm the adapter count matches the pre-merge count (§2 case 3). If
+the new version's CHANGELOG mentions migration notes, follow them.
 
 ## 5. Commit and tell them what they got
 

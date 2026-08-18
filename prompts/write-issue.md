@@ -48,8 +48,14 @@ Read these five things, in this order:
    already gone wrong there.
 4. **`data/lessons-learned.md`** — the accumulated rules. The standing rules at the
    top are the consolidated version; read those in full.
-5. **The most recent file in `issues/`** — match its house style exactly. If there is
-   no previous issue, follow the Structure section below.
+5. **The most recent file in `issues/`** — match its house style exactly. If there
+   is no previous issue, **start your `<style>` block from
+   `fixtures/house-style.css`** (inline the whole sheet and set its three custom
+   properties from `site.config.json` colors), then follow the Structure section
+   below. Do not invent a stylesheet from the prose description — the first
+   field instance did, and its issue came out structurally correct and visually
+   generic. Do not style or emit site chrome (`.sitenav`, `.issuebar`,
+   `.sitefoot`, `.wrap`) — build.mjs owns those, including the reading column.
 
 ---
 
@@ -194,6 +200,12 @@ internal link.
 - **When the best available source is secondary, say so in the same sentence.** "The
   brokerage's index puts the median at X" is honest; "the median is X" cited to a
   brokerage is not.
+- **The usual cost of a secondary source is omission, not error.** An outlet's
+  summary of an agency announcement is typically accurate — and missing the
+  detour route, the related closures, and the date buried further down the
+  agency's own notice. When a claim traces to an official announcement, read the
+  announcement: the write-up tells you what happened, the record tells readers
+  what to do about it.
 - **Some facts have no primary source and that is fine.** A shop opening, a team's
   schedule, a restaurant closing — cite the reporting, name the outlet, move on. Do
   not manufacture false authority for an ordinary fact.
@@ -291,6 +303,13 @@ the second-best move; the best is not printing it.
   sharing your area's name has different police, different schools, different rules.
   Check which side of the line every such item is on, and say so. This is the most
   likely factual error a ZIP publication makes and a reader will catch it instantly.
+- **Inside a big city, the same trap wears a different coat: neighboring
+  neighborhoods of the same city, same council district, same agency.** An
+  agency's announcement can lead with a project in the next neighborhood over
+  and bury the item that is actually in your ZIP further down the same release.
+  Whenever the publishing agency covers several neighborhoods, read past the
+  headline item and state which neighborhood each item lands in — attribute by
+  the project's location, never by the release's lead.
 - **Civic organizations are primary for themselves and interested about everything
   else.** A neighborhood association is authoritative for what it said, voted or
   decided. On any contested matter it is a participant, and its membership usually

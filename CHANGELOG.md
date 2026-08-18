@@ -17,6 +17,72 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.7.0] — 2026-08-18
+
+Everything in this release comes from the first full field test of a real
+instance (ZIP 90744, Wilmington CA): three reports covering a v0.4.0→v0.6.0
+`/update-kit` merge, a cold-start onboarding run, and a side-by-side layout
+comparison against the reference publication.
+
+### Fixed
+- **Adapter registrations can no longer be wiped by a kit update** (high
+  severity): `bin/adapters/index.mjs` now auto-discovers every non-underscore
+  `.mjs` file in `bin/adapters/` — adapter files register themselves by
+  existing, so no instance state lives in a kit-owned file. Before this, the
+  update merge rule "kit files take the update" replaced an instance's
+  hand-edited registry with the empty default: four working adapters silently
+  unhooked, every gate green, next issue written with no local data. Migration:
+  each adapter file must `export const adapter = {...}` (or default); a broken
+  adapter file is a fatal load error, never silently skipped. `/update-kit`
+  documents the pre-0.7 migration and requires an adapter-count check.
+- **First issues no longer render at full viewport width**: the injected chrome
+  styled a `.wrap` reading column that nothing emitted. `build.mjs` now owns it —
+  injects `<div class="wrap">` around the issue body when the issue doesn't
+  bring its own, and the chrome CSS carries the 760px column rule.
+- `/update-kit` hardening from the live merge: README.md and derived
+  `architecture.svg` classified; `data/lessons-learned.md` named as dual-owned
+  (Part 1 merges from kit, Part 2 is instance history); "expect every touched
+  file to conflict — normal for unrelated histories"; workflow conflicts:
+  take the kit file wholesale then re-patch cron lines; `probe-sources` added
+  to the verify list; arrive-with-the-update caveat for pre-0.5 instances.
+
+### Added
+- **The lag-zero contract** (`bin/adapters/README.md` §9, enforced as WARNs in
+  `verify-issue.mjs`): a source that lags returns a true 0 for a window it has
+  not covered yet, and "none this week" printed from it is fabricated. Count
+  blocks now carry `dataThrough`; verify warns on a zero total whose
+  `dataThrough` predates the issue week, and on zero totals with no
+  `dataThrough` at all. Plus: measure the last complete window, name it in
+  print, and withhold verdicts on partial windows (day-of-week composition).
+- **`fixtures/house-style.css`** — the reference look as a parameterized
+  stylesheet (CSS custom properties fed from config colors). The editorial
+  brief now says "start from this" for first issues instead of describing the
+  style in prose, which produced structurally-correct visually-generic issues.
+- **Geography doctrine** (`bin/adapters/README.md` §10): the three ways a
+  dataset can lack your ZIP and the right fix for each; never trust a place
+  name or bounding box where a boundary test is available.
+- **Assert-meaning traps, named** (from live incidents): portal `updatedAt`
+  lies — query `max(date_field)`; padded fields make equality filters return
+  0-with-200 — use LIKE/numeric filters and cross-check a group-by; a 200 with
+  an empty body is a failure; probe the trap, not just the happy path.
+- **measure-issue runs in the weekly pipeline** (advisory, after the
+  rubric-unchanged guard, never blocking) and in `/first-issue`'s gauntlet —
+  its counts caught an audience-breadth failure three gates missed. Docket
+  regex widened (Project/File/Council File/CF) with a
+  zero-can-be-a-measurement-gap note.
+- Editorial brief: the cost of a secondary source is omission, not error (read
+  the record behind the write-up); inside a big city, attribute items by
+  project location, never by a release's lead — same-city neighborhoods are the
+  urban version of the adjacent-jurisdiction trap.
+- README's update section now carries a **copy-paste block that bootstraps
+  `/update-kit` from upstream** for instances that predate it.
+- find-sources: multi-municipality ZIPs reframed as common (urban too);
+  same-named abbreviations/slugs as a decoy class — confirm a civic body by a
+  published address or boundary, never by name, initials, or URL.
+- setup: guard against capturing an "Other" option label as the user's answer.
+- first-issue: expect the PDF step to need `npx playwright install chromium` on
+  a fresh clone.
+
 ## [0.6.0] — 2026-08-18
 
 ### Added

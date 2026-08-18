@@ -363,12 +363,20 @@ jobs:
           # nothing, so one missing directory stages nothing at all — and a
           # `git add -A` fallback would sweep in ANYTHING the agent touched,
           # including the rubric it is judged against.
+          # Archive the issue's evidence counts (advisory, never a gate — but a
+          # first-issue field test showed the counts catch editorial failures
+          # the gates cannot, e.g. an audience-breadth zero on a draft that
+          # wrote around the requirement). Runs AFTER the rubric-unchanged
+          # guard, so QA-QC/measurements is a recorded output, not agent
+          # tampering; non-fatal because measurement must never block an issue.
+          node QA-QC/measure-issue.mjs "issues/${{ steps.date.outputs.week }}.html" > /dev/null \
+            || echo "::warning::measure-issue failed — publishing anyway (measurement is advisory)"
           # Re-render the architecture diagram from config before committing —
           # a derived artifact kept fresh by machinery, not by habit (a stale
           # hand-refreshed diagram is a documented failure of the reference
           # implementation). Non-fatal: a diagram must never block an issue.
           node bin/render-architecture.mjs || echo "::warning::architecture diagram re-render failed — not blocking the issue"
-          for p in issues data addendum docs/architecture.svg; do
+          for p in issues data addendum docs/architecture.svg QA-QC/measurements; do
             [ -e "$p" ] && git add "$p"
           done
           if git diff --cached --quiet; then

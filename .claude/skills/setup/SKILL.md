@@ -30,7 +30,11 @@ roughly $10–50/year.
 
 ## 2. The interview — one question at a time
 
-Ask, in this order, and confirm each answer back:
+Ask, in this order, and confirm each answer back. When a question is offered as
+multiple-choice with an "Other" option, check that what came back is the user's
+actual answer and not the literal option label ("Other — type street names" is a
+label, not a street name) — re-ask plainly if in doubt. Never write a label into
+config.
 
 1. **What ZIP code?** Sanity-check it is a real 5-digit US ZIP; look up its city,
    county, and state (WebSearch or your knowledge) and confirm with the user —
