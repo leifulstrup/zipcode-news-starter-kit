@@ -100,9 +100,11 @@ Three hand-merge cases — never blind-checkout these:
    and after** (`node bin/fetch-data.mjs` prints the count; so does
    `bin/probe-sources.mjs`): if the count fell, stop and fix before committing.
 
-For workflow files: take the kit's file wholesale, then re-patch the instance's
-cron lines — the kit side usually carries other changes a hunk-level "ours"
-would lose.
+For workflow files: take the kit's file wholesale, then run
+`node bin/sync-crons.mjs` — it re-derives every schedule from the instance's own
+`site.config.json`, so you keep the kit's workflow improvements AND the
+publisher's timing without hand-patching cron lines (which is how a smoke test
+ends up scheduled before the publish it verifies). Doctor asserts the result.
 
 ## 3. Merge
 
@@ -120,10 +122,9 @@ On conflicts, resolve by the ownership rule above: `git checkout --ours` for
 their files, `git checkout --theirs` for kit files, hunk-by-hunk for a
 customized editorial brief. Explain each resolution in one plain sentence as you
 go. After resolving: re-apply any instance customizations the merge may have
-reverted in kit-owned files — check specifically that the **cron lines** in the
-workflows still match `site.config.json` (`cronUtc`, and `daily.hourUtc` if the
-daily digest is enabled), and that `wrangler.toml → name` still matches
-`workerName`.
+reverted in kit-owned files — run `node bin/sync-crons.mjs` to restore the
+instance's schedules (never hand-patch them), and check that
+`wrangler.toml → name` still matches `workerName`. Doctor verifies both.
 
 ## 4. Verify before declaring victory
 
@@ -133,6 +134,7 @@ Run, in order, and fix anything that fails:
 node bin/doctor.mjs
 node build.mjs
 node bin/next-step.mjs
+node bin/sync-crons.mjs      # re-derive schedules from THIS instance's config
 node bin/render-architecture.mjs
 node bin/probe-sources.mjs   # instances with adapters: the check most likely
                              # to catch a broken merge — run it every time

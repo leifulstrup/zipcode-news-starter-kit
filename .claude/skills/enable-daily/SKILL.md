@@ -68,7 +68,9 @@ The digest watches RSS/Atom feeds from **already-approved sources only**:
 1. Set `site.config.json → daily`: `enabled: true`, `deliverTo`, `hourUtc`,
    `sendQuietDays` per the interview. (`loadDaily` supplies model/maxItems
    defaults; only change them if asked.)
-2. Rewrite the cron line in `.github/workflows/daily.yml` to match `hourUtc`.
+2. Write `hourUtc` into `site.config.json`, then run `node bin/sync-crons.mjs` —
+   it rewrites `daily.yml` (and re-derives every other schedule from `cronUtc`).
+   Never hand-edit a cron line; doctor asserts the files agree.
 3. **Show the delta mechanics** — run it twice so they see it learn:
    ```
    node bin/daily-delta.mjs

@@ -121,9 +121,47 @@ config.
      centroid yourself (e.g. lat "38.9", lon "-77.0") and explain that this blocks
      any coordinate in the neighborhood from ever being printed
      (→ `coordinatePrefixes`);
-   - any personal email addresses to block (→ `blockedEmails`).
+   - **only** email addresses at *non-personal* providers — work, university, a
+     vanity domain (→ `blockedEmails`). Do **not** write their personal
+     gmail/yahoo/hotmail/icloud/outlook/aol address here: `privacy-scan.mjs`
+     already blocks every address at those providers generically, so listing it
+     adds zero coverage while writing the exact identifier this file exists to
+     suppress into a committed file. Leave `blockedEmails` empty if their only
+     address is at a big provider, and say why in one sentence.
+   - **does their county publish assessor parcel numbers, and in what shape?**
+     (→ an `extraPatterns` entry). A parcel number pastes straight into a county
+     portal and resolves to one property: it is an address that hides from a
+     name search, exactly like a coordinate. Formats are county-specific, so ask
+     rather than assume — e.g. a 4-3-3 digit form with optional separators
+     becomes `\b(?:APN|assessor'?s? parcel(?: number)?)\s*:?\s*\d{4}[- ]?\d{3}[- ]?\d{3}\b`.
+     Many local data sources (permits, code enforcement, recorded sales) carry
+     them, so this is a live risk wherever the county publishes them. Include a
+     `why` on the entry.
    These values live only in their private repo copy. Do not let the user skip this
    with "I don't care" without hearing the one-sentence why once.
+
+   **Then prove the gate caught it, before moving on.** Doctor proves the gate's
+   *built-in* patterns against the kit's fixtures; it says nothing about whether
+   *this publisher's* values were entered correctly. A typo'd surname or a
+   latitude prefix off by a digit yields a silently weaker gate that still shows
+   green — and the publisher has no reason to doubt it, having just watched the
+   checks pass. So generate a throwaway probe from the values they just gave,
+   run the gate on it, show them the hits, and delete it:
+
+   ```
+   # write /tmp/privacy-probe.html containing, on separate lines:
+   #   a full decimal lat/lon pair inside their area
+   #   a bare latitude and a bare longitude at their configured prefixes
+   #   "your street" phrasing
+   #   each publisherName, each streetMarker with a house number
+   #   a parcel number in their county's format (if configured)
+   node bin/privacy-scan.mjs /tmp/privacy-probe.html    # expect exit 1 and one hit per hazard
+   rm /tmp/privacy-probe.html
+   ```
+
+   If any hazard is NOT caught, the config is wrong — fix it and re-run. Thirty
+   seconds, and it converts "I filled in a form" into "I watched it catch me."
+   Never leave the probe file behind.
 
 ## 3. Write the configuration
 
@@ -137,16 +175,32 @@ With approvals in hand:
 2. Write `config/privacy.json` with the interview's privacy answers, each
    `extraPatterns` entry carrying a `why`.
 3. Update `wrangler.toml` → `name` to the workerName.
-4. Update the cron line in `.github/workflows/weekly.yml` to the computed `cronUtc`,
-   and keep `site.config.json.cronUtc` identical to it.
+4. Write `cronUtc` into `site.config.json`, then run:
+
+   ```
+   node bin/sync-crons.mjs
+   ```
+
+   **Do not hand-edit any cron line.** Three workflows carry schedules derived
+   from the publish time — `weekly.yml`, `smoke.yml` (one hour after the
+   publish), and `publication-check.yml` (the following two days) — and the
+   arithmetic crosses a weekday boundary whenever the publish is late enough in
+   UTC. A Pacific publisher choosing 4pm local lands at 23:00 UTC, so the smoke
+   test belongs at 00:00 the NEXT day; bumping the hour digit alone schedules it
+   23 hours *before* the publish it verifies, where it passes forever against
+   last week's site and never alerts. The script does that arithmetic and prints
+   what it derived; doctor asserts the three files agree.
 5. Run `node bin/render-architecture.mjs` — it regenerates the README's
    architecture diagram (`docs/architecture.svg`) from the config just written, so
    the picture now shows *their* publication name, ZIP, publish day, and URL.
    Re-run it any time `site.config.json` changes (the weekly workflow also
    re-renders it automatically). Show them the diagram — it is the best
    30-second explanation of what they just configured.
-6. Run `node bin/doctor.mjs` to confirm the configuration is coherent. Fix anything
-   it reports before moving on.
+6. Run `node bin/doctor.mjs`. Beyond the gate self-test it now checks the
+   configuration itself: that the three workflow schedules derive from
+   `cronUtc`, that `wrangler.toml`'s name matches `workerName`, and that no
+   placeholder values survive. Fix anything it reports before moving on — and
+   tell the user what it verified, not just that it was green.
 
 ## 4. Show them their site
 

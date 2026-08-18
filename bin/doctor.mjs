@@ -109,6 +109,67 @@ try {
 }
 
 // ---------------------------------------------------------------------------
+// Configuration coherence. /setup tells the publisher this run "confirms the
+// configuration is coherent" — a sentence that was false until these existed:
+// doctor tested only the gates against fixtures and would have passed
+// identically with a placeholder worker name and three contradictory
+// schedules. A green check that does not check what it claims is worse than no
+// check, because the publisher reads it and stops looking. (90706 field
+// instance.) The invariants were already written down — as comments inside the
+// very files that must agree; comments are not enforcement.
+// ---------------------------------------------------------------------------
+{
+  const { loadConfig } = await import('./lib/config.mjs');
+  const { readFileSync: rf, existsSync: ex } = await import('node:fs');
+  const cfg = loadConfig();
+
+  // Schedules must all derive from cronUtc. sync-crons owns the arithmetic —
+  // doctor must never re-implement it, or the two drift and both look right.
+  const sync = spawnSync(process.execPath, ['bin/sync-crons.mjs', '--check'],
+    { cwd: ROOT, encoding: 'utf8' });
+  const syncOk = sync.status === 0;
+  rows.push({
+    result: syncOk ? 'PASS' : 'FAIL',
+    case: 'workflow schedules match site.config.json',
+    detail: syncOk ? '' :
+      'a workflow cron disagrees with cronUtc. A smoke test scheduled before the publish it ' +
+      'verifies passes forever against last week\'s site. Fix:  node bin/sync-crons.mjs',
+  });
+  if (!syncOk) failures++;
+
+  // wrangler.toml name must match workerName, or the deploy targets a
+  // different Worker than every URL the kit prints.
+  if (ex(join(ROOT, 'wrangler.toml'))) {
+    const wr = rf(join(ROOT, 'wrangler.toml'), 'utf8');
+    const nm = wr.match(/^\s*name\s*=\s*"([^"]+)"/m)?.[1];
+    const ok = nm === cfg.workerName;
+    rows.push({
+      result: ok ? 'PASS' : 'FAIL',
+      case: 'wrangler.toml name matches workerName',
+      detail: ok ? '' : `wrangler.toml says "${nm}", site.config.json says "${cfg.workerName}" — ` +
+        `the deploy would target a different Worker than the URLs the kit prints.`,
+    });
+    if (!ok) failures++;
+  }
+
+  // Placeholders left behind after /setup mean a half-configured instance.
+  // Skipped on an unconfigured clone, where placeholders are correct.
+  if (cfg.zip !== '00000') {
+    const stale = [];
+    for (const f of ['site.config.json', 'wrangler.toml']) {
+      if (ex(join(ROOT, f)) && /00000|Anytown|zipcode-news-00000/.test(rf(join(ROOT, f), 'utf8'))) stale.push(f);
+    }
+    rows.push({
+      result: stale.length ? 'FAIL' : 'PASS',
+      case: 'no placeholder values left in config',
+      detail: stale.length ? `placeholder text (00000 / Anytown) still in: ${stale.join(', ')} — ` +
+        `re-run /setup or edit by hand; a half-configured instance publishes the template's identity.` : '',
+    });
+    if (stale.length) failures++;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Repo-state checks. Not gates against fixtures — these catch a repo left in a
 // state that will break a LATER step, which is the failure class /update-kit
 // created: adding the template remote silently broke every `gh` command in

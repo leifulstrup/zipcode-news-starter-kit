@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.8.0] — 2026-08-18
+
+All three findings from the second field instance's `/setup` run (ZIP 90706),
+worst first.
+
+### Fixed
+- **HIGH: a smoke test could be scheduled 23 hours BEFORE the publish it
+  verifies, and pass forever.** `/setup` named only `weekly.yml`, while the
+  instruction to move the other two schedules lived as a comment inside files
+  nobody had reason to open. The arithmetic bites hardest on the kit's own
+  recommended cadence: a Pacific 4pm publish is 23:00 UTC, so the smoke test
+  "one hour later" belongs on the NEXT UTC day — bumping only the hour digit
+  schedules it 23 hours early, where it passes every week against the previous
+  week's site and never alerts, because a passing watchdog is the silence this
+  system is designed to produce. Every US Pacific publisher following the kit's
+  own advice lands in that band. **New `bin/sync-crons.mjs` derives all
+  schedules from `cronUtc`** (with the weekday rollover), `/setup`,
+  `/enable-daily` and `/update-kit` call it instead of hand-editing, and doctor
+  asserts the files agree. Modular arithmetic on weekday indices is not a task
+  for a human or an agent at 4pm on a Friday.
+- **MEDIUM: `/setup` claimed doctor "confirms the configuration is coherent"
+  when doctor never read the configuration.** It was purely a gate self-test
+  against fixtures and would have passed identically with a placeholder worker
+  name and three contradictory schedules — worse than no check, because the
+  publisher reads green and stops looking. Doctor now checks the config it was
+  said to check: schedules derive from `cronUtc`, `wrangler.toml` name matches
+  `workerName`, and no placeholder values survive a configured instance.
+
+### Added
+- **`/setup` now proves the publisher's own privacy patterns catch their own
+  hazards** before handing off: it generates a throwaway probe from the values
+  just entered (coordinate pair, bare lat/lon at the configured prefixes,
+  second-person phrasing, each name and street marker, a parcel number),
+  runs the gate, shows the hits, and deletes the probe. Doctor proves the
+  gate's *built-in* patterns; nothing proved *this instance's*, so a typo'd
+  surname or a latitude off by a digit yielded a silently weaker gate showing
+  green. Thirty seconds, and it converts "I filled in a form" into "I watched
+  it catch me."
+- **Assessor parcel numbers as a privacy hazard.** `/setup` now asks whether
+  the county publishes them and in what shape (formats are county-specific, so
+  it asks rather than shipping one national regex). A parcel number pastes into
+  a county portal and resolves to exactly one property — an address that hides
+  from a name search, the same sentence as the coordinate rule, in the local
+  dialect. Permits, code enforcement and sales feeds all carry them.
+
+### Changed
+- **`/setup` no longer writes the publisher's personal email into
+  `blockedEmails`.** The privacy gate already blocks every address at the big
+  consumer providers generically, so listing it added zero coverage while
+  writing the exact identifier the file exists to suppress into a committed
+  file. It now asks only for addresses at non-personal providers (work,
+  university, vanity domain) — the ones the generic rule genuinely misses.
+
 ## [0.7.8] — 2026-08-18
 
 ### Added
