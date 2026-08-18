@@ -63,7 +63,41 @@ permissions:
   issues: write          # open a review issue when the addendum flags something
 
 jobs:
+  # A repo created from the template has ALL workflows registered and ACTIVE from
+  # minute one — GitHub enables them on creation, before /setup has ever run. So a
+  # copy made on Monday and abandoned mid-interview would fire this cron on Friday
+  # with the placeholder ZIP, fail, and email its owner a red X for a publication
+  # that does not exist yet — breaking "silence means the system is working"
+  # before they finished the interview.
+  #
+  # This is a separate JOB, not a per-step `if:`, and that distinction is the
+  # whole point. A first attempt gated each step individually and MISSED the six
+  # writer steps, because their `if: env.AGENT == 'claude'` is evaluated against
+  # job-level env and stayed true — so the only steps that cost money were the
+  # only ones that still ran, and an instance with a credential but an unfinished
+  # setup would have been billed to write an issue for ZIP 00000. A job-level
+  # gate covers every step, including ones nobody has written yet, and renders as
+  # a neutral skip rather than a red failure. (90706 field instance, twice.)
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: check
+        run: |
+          ZIP=$(node -p "require('./site.config.json').zip")
+          if [ "$ZIP" = "00000" ]; then
+            echo "::notice::This copy still has the placeholder ZIP (00000) — nothing to publish yet. Run /setup to configure your publication; this workflow starts doing real work once it has a real ZIP."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Configured for ZIP $ZIP."
+          fi
+
   issue:
+    needs: preflight
+    if: needs.preflight.outputs.configured == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45   # the real spend guard: bounds a runaway agent by wall-clock
 
@@ -78,26 +112,8 @@ jobs:
         with:
           node-version: '22'
 
-      # A repo created from the template has ALL workflows registered and ACTIVE
-      # from minute one — GitHub enables them on creation, before /setup has run.
-      # Without this, a copy made on Monday and abandoned mid-interview fires its
-      # cron on Friday with placeholder ZIP 00000, no adapters and no credential,
-      # and emails its owner a red X for a publication that does not exist yet —
-      # breaking "silence means the system is working" before they finish setup.
-      # daily.yml already guards this way; weekly.yml did not. (90706 instance.)
-      - name: Skip if this copy has not been configured yet
-        id: configured
-        run: |
-          ZIP=$(node -p "require('./site.config.json').zip")
-          if [ "$ZIP" = "00000" ]; then
-            echo "::notice::This copy still has the placeholder ZIP (00000) — nothing to publish yet. Run /setup to configure your publication; this workflow will start doing real work once it has a real ZIP."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Resolve the issue date
-        if: steps.configured.outputs.skip != 'true'
         id: date
         run: |
           WEEK="${WEEK:-$(date -u +%F)}"
@@ -108,11 +124,9 @@ jobs:
       # 1. FACTS — deterministic. No model involved.
       # ---------------------------------------------------------------
       - name: Fetch the week's data
-        if: steps.configured.outputs.skip != 'true'
         run: node bin/fetch-data.mjs --week "${{ steps.date.outputs.week }}"
 
       - name: Show what was retrieved
-        if: steps.configured.outputs.skip != 'true'
         run: |
           node -e "
             const f = require('./data/facts/${{ steps.date.outputs.week }}.json');
@@ -278,7 +292,6 @@ jobs:
       #    issue stays live.
       # ---------------------------------------------------------------
       - name: The agent must have produced an issue
-        if: steps.configured.outputs.skip != 'true'
         run: |
           F="issues/${{ steps.date.outputs.week }}.html"
           if [ ! -s "$F" ]; then
@@ -288,7 +301,6 @@ jobs:
           echo "issue present: $(wc -c < "$F") bytes"
 
       - name: Privacy scan
-        if: steps.configured.outputs.skip != 'true'
         run: |
           # Scan the FACTS FILE too, not just the issue: it is committed to the
           # repo, adapters can pull coordinate and address fields, and the
@@ -298,7 +310,6 @@ jobs:
           node bin/privacy-scan.mjs "issues/${{ steps.date.outputs.week }}.html" "data/facts/${{ steps.date.outputs.week }}.json"
 
       - name: Check the issue against the facts it was given
-        if: steps.configured.outputs.skip != 'true'
         run: node bin/verify-issue.mjs --week "${{ steps.date.outputs.week }}"
 
       # ---------------------------------------------------------------
@@ -309,7 +320,6 @@ jobs:
       # that only ran inside build.mjs would reach the website and nothing else.
       # Normalizing here keeps the artifact, the PDF and the site identical.
       - name: Normalize links in the issue
-        if: steps.configured.outputs.skip != 'true'
         run: node bin/normalize-issue.mjs "issues/${{ steps.date.outputs.week }}.html"
 
       # Two separate installs, and both are needed: the npm PACKAGE (so
@@ -318,13 +328,11 @@ jobs:
       # without the module — html-to-pdf.mjs then dies on ERR_MODULE_NOT_FOUND
       # after a 28-second browser download already succeeded.
       - name: Install Playwright and Chromium for the PDF
-        if: steps.configured.outputs.skip != 'true'
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Render the PDF
-        if: steps.configured.outputs.skip != 'true'
         run: |
           FOOTER=$(node -p "const c=require('./site.config.json'); \
             (c.experimental ? c.siteName + ' (Experimental)' : c.siteName) + \
@@ -335,21 +343,18 @@ jobs:
             "$FOOTER"
 
       - name: Build the site
-        if: steps.configured.outputs.skip != 'true'
         run: node build.mjs
 
       # The editor's addendum — operational detail that must never clutter the
       # issue. addendum/ is never read by build.mjs, so none of it can reach the
       # site.
       - name: Build the editor's addendum
-        if: steps.configured.outputs.skip != 'true'
         id: addendum
         env:
           ADDENDUM_MD: ${{ runner.temp }}/addendum.md
         run: node bin/build-addendum.mjs --week "${{ steps.date.outputs.week }}"
 
       - name: The new issue must actually appear in the build
-        if: steps.configured.outputs.skip != 'true'
         run: |
           W="${{ steps.date.outputs.week }}"
           for f in public/archive/index.html public/feed.xml "public/$W/index.html"; do
@@ -379,7 +384,6 @@ jobs:
       # because quietly editing the reasoning behind a rule has the same effect as
       # editing the rule.
       - name: The agent must not have modified the rubric
-        if: steps.configured.outputs.skip != 'true'
         run: |
           DIRTY=$(git status --porcelain QA-QC Research 2>/dev/null || true)
           if [ -n "$DIRTY" ]; then

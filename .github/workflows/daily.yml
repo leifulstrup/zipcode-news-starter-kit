@@ -33,7 +33,30 @@ permissions:
 concurrency: daily-digest
 
 jobs:
+  # Config gate at JOB level, runtime gate at step level. The digest is opt-in,
+  # and "opt-in" is knowable before any step runs — so it belongs on the job,
+  # where it also covers steps nobody has written yet. Per-step gating of a
+  # cost-bearing step is exactly the shape that failed in weekly.yml: the writer
+  # steps carried their own `if:` on a different variable and ran anyway. The
+  # quiet-day check stays per-step because it is only knowable AFTER the delta
+  # has been collected.
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: check
+        run: |
+          ENABLED=$(node -p "JSON.parse(require('fs').readFileSync('site.config.json','utf8')).daily?.enabled===true")
+          echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
+          if [ "$ENABLED" != "true" ]; then
+            echo "::notice::The daily digest is opt-in and not enabled for this publication. Run /enable-daily to turn it on. Nothing to do."
+          fi
+
   digest:
+    needs: preflight
+    if: needs.preflight.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     # Summarization, not research: if this takes longer than 15 minutes,
     # something is wrong and stopping is cheaper than waiting.
@@ -58,13 +81,8 @@ jobs:
           QUIETSEND=$(node -p "JSON.parse(require('fs').readFileSync('site.config.json','utf8')).daily?.sendQuietDays===true")
           echo "quietsend=$QUIETSEND" >> "$GITHUB_OUTPUT"
 
-      - name: Digest is not enabled — nothing to do
-        if: steps.cfg.outputs.enabled != 'true'
-        run: |
-          echo "::notice::site.config.json daily.enabled is false — the daily digest is opt-in. Run /enable-daily to turn it on."
 
       - name: Collect the delta (deterministic — no model)
-        if: steps.cfg.outputs.enabled == 'true'
         id: delta
         run: |
           node bin/daily-delta.mjs --date "${{ steps.cfg.outputs.date }}"
@@ -72,7 +90,7 @@ jobs:
           echo "quiet=$QUIET" >> "$GITHUB_OUTPUT"
 
       - name: Quiet day — stop before spending anything
-        if: steps.cfg.outputs.enabled == 'true' && steps.delta.outputs.quiet == 'true' && steps.cfg.outputs.quietsend != 'true' && github.event.inputs.force_send != 'true'
+        if: steps.delta.outputs.quiet == 'true' && steps.cfg.outputs.quietsend != 'true' && github.event.inputs.force_send != 'true'
         run: |
           echo "::notice::Quiet day — nothing genuinely new since the last digest. No model run, no email. This is the cost model working, not a failure."
 
@@ -82,7 +100,7 @@ jobs:
       # what makes verify-digest's URL-subset gate airtight, and it caps the
       # spend: there is nothing to research, so no way to burn turns on it.
       - name: Write the digest (small model)
-        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        if: (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
         uses: anthropics/claude-code-action@v1
         with:
           # Same credential rule as weekly.yml: pass ONLY the credential you set
@@ -105,7 +123,7 @@ jobs:
             --allowedTools "Read,Write,Edit,Glob,Grep"
 
       - name: The digest must exist
-        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        if: (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
         run: |
           F="data/daily/${{ steps.cfg.outputs.date }}.md"
           if [ ! -s "$F" ]; then
@@ -114,21 +132,21 @@ jobs:
           fi
 
       - name: Gate — digest may only report the delta
-        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        if: (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
         run: node bin/verify-digest.mjs "data/daily/${{ steps.cfg.outputs.date }}.md" "data/daily/${{ steps.cfg.outputs.date }}.json"
 
       - name: Gate — privacy scan
-        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        if: (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
         run: node bin/privacy-scan.mjs "data/daily/${{ steps.cfg.outputs.date }}.md"
 
       - name: Send to the publisher
-        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        if: (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
         env:
           AGENTMAIL_API_KEY: ${{ secrets.AGENTMAIL_API_KEY }}
         run: node bin/send-digest.mjs "data/daily/${{ steps.cfg.outputs.date }}.md"
 
       - name: Upload artifacts
-        if: always() && steps.cfg.outputs.enabled == 'true'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: daily-${{ steps.cfg.outputs.date }}
@@ -139,7 +157,6 @@ jobs:
       # State must be committed even on quiet days — the seen-item baseline IS
       # the product's memory. Same guarded-add + rebase-retry as weekly.yml.
       - name: Commit state and digest
-        if: steps.cfg.outputs.enabled == 'true'
         run: |
           git config user.name  "newsletter bot"
           git config user.email "actions@users.noreply.github.com"

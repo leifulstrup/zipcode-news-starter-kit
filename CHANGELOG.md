@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.11.1] — 2026-08-18
+
+### Fixed
+- **The v0.11.0 unconfigured-copy guard missed the six steps that cost money.**
+  It gated 13 steps individually, but `AGENT` is set at **job** level, so
+  `if: env.AGENT == 'claude'` on each writer step stayed true and the writer ran
+  anyway — the friendly notice appeared in the log of a failed run. Worse: an
+  instance that had a credential but an unfinished `/setup` would not merely have
+  failed, it would have **invoked the model to write an issue for ZIP 00000 and
+  been billed for it**. Everything the guard successfully protected was free;
+  everything it missed was not.
+
+  Fixed structurally, not with six more `&&` clauses (which is the same shape
+  that just failed and rots on the seventh writer path): a **`preflight` job**
+  computes `configured`, and the `issue` job carries a single
+  `if: needs.preflight.outputs.configured == 'true'`. One condition now gates all
+  25 steps — including any nobody has written yet — and an unconfigured copy
+  renders as a **neutral skip rather than a red failure**. `daily.yml` gets the
+  same treatment: config gate at job level (opt-in is knowable up front), runtime
+  quiet-day gate still per-step (only knowable after the delta is collected).
+- **`/update-kit` silently dropped new config keys.** `site.config.json` is
+  listed as instance-owned, and `--ours` resolves its conflicts cleanly, passes
+  doctor — and discards every key an update added. A real instance lost
+  `stateCode`/`countyFips`/`placeFips` this way and was left quietly unable to
+  use the shared registry, which reported only "no stateCode, nothing to look
+  up." Config files are now a named **fourth hand-merge case**: they merge by
+  **key**, not by file — keep the instance's values, add the kit's new keys, and
+  fill them in deliberately, because `/setup` will not run again for an existing
+  instance.
+
 ## [0.11.0] — 2026-08-18
 
 ### Fixed
