@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.7.5** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.7.6** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -42,7 +42,20 @@ You need [Claude Code](https://claude.com/claude-code) and
 
 1. **Get your copy**: click **Use this template** on GitHub (or download the ZIP)
    — don't fork; your copy will become a private repo with your own settings.
-2. **Open the folder in any Claude** (Claude Code terminal, Cowork, or the
+
+2. **Prove the kit works before you invest a minute in it.** In the folder, run:
+
+   ```
+   node bin/doctor.mjs
+   ```
+
+   You should see **8 checks pass** on a fresh, unconfigured clone. Doctor tests
+   the quality gates against known-good and deliberately-broken sample issues,
+   so it answers "did I download something broken?" in about thirty seconds —
+   and catches a bad Node install before you've answered ten minutes of
+   interview questions. (Node 20+ required.)
+
+3. **Open the folder in any Claude** (Claude Code terminal, Cowork, or the
    desktop app) **and paste this:**
 
    > Read `.claude/skills/setup/SKILL.md` and follow it.
@@ -50,7 +63,7 @@ You need [Claude Code](https://claude.com/claude-code) and
    That's the whole interface. Each step ends by telling you the next one, and
    every step is invoked the same way — paste the sentence, Claude does the rest.
 
-3. **Lost at any point?** Run:
+4. **Lost at any point?** Run:
 
    ```
    node bin/next-step.mjs

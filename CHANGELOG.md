@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.6] — 2026-08-18
+
+### Added
+- **Run `doctor` first, and say what it proves.** `node bin/doctor.mjs` passes
+  8/8 on a fresh unconfigured clone — it tests the gates against fixtures, not
+  against your config — but nothing surfaced that, so a new publisher's first
+  question ("did I download something broken?") went unanswered until after a
+  ten-minute interview. It is now step 2 of the README Quickstart and step 1 of
+  `/setup`, with the reassurance stated explicitly. It also catches a bad Node
+  install before the user invests any answers. (Second field instance, ZIP
+  90706.)
+
 ## [0.7.5] — 2026-08-18
 
 ### Fixed

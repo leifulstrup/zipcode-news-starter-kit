@@ -12,9 +12,24 @@ the zipcode-news starter kit. Assume they have never used git, GitHub, or Cloudf
 time and wait for the answer.** Never batch the interview into a single wall of
 questions.
 
-## 1. Welcome and set expectations
+## 1. Welcome, and prove the kit is sound before changing anything
 
-Briefly explain the journey and roughly what each step involves:
+Open by running:
+
+```
+node bin/doctor.mjs
+```
+
+It should print **8 checks passed** on an untouched clone. Say what it just
+proved, in one sentence: the quality gates were tested against known-good and
+deliberately-broken sample issues and behaved correctly, so the kit itself is
+working before we change a thing — and their Node install is fine. This answers
+the new publisher's real first question ("did I download something broken?")
+before they invest ten minutes in an interview. If it fails, stop and fix that
+first: everything downstream depends on the gates working, and a failure here is
+usually Node (needs 20+) rather than the kit.
+
+Then briefly explain the journey and roughly what each step involves:
 
 1. **/setup** (now, ~10 minutes) — identity, privacy, and a first local build.
 2. **/find-sources** (~30–60 minutes, the fun part) — discover and vet the data
