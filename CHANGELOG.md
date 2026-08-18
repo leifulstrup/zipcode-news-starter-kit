@@ -17,6 +17,17 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.4.1] — 2026-08-18
+
+### Fixed
+- **"Unknown command: /find-sources" during onboarding** (found in live testing):
+  Claude Code registers the kit's slash commands only when launched from the kit
+  folder, so a session started elsewhere (or before cloning) can't see them. The
+  README Quickstart now says to `cd` into the folder before launching, a FAQ entry
+  covers the symptom, and every skill's hand-off to the next skill teaches the
+  no-restart fallback: "read `.claude/skills/<name>/SKILL.md` and follow it" —
+  every skill works both ways.
+
 ## [0.4.0] — 2026-08-18
 
 ### Added

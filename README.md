@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.4.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.4.1** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -42,7 +42,19 @@ You need [Claude Code](https://claude.com/claude-code) and
 
 1. **Get your copy**: click **Use this template** on GitHub (or download the ZIP)
    — don't fork; your copy will become a private repo with your own settings.
-2. Open the folder in Claude Code and type **`/setup`**.
+2. **Start Claude Code from inside the kit folder**, then type **`/setup`**:
+
+   ```
+   cd path/to/your-copy
+   claude
+   ```
+
+   The folder matters: the `/setup`, `/find-sources`, etc. commands are part of
+   this kit, and Claude Code only registers them from the folder it was launched
+   in. If any of them comes back **"Unknown command"**, either restart Claude Code
+   from inside the kit folder — or skip the slash command and tell Claude:
+   *"read `.claude/skills/setup/SKILL.md` and follow it."* Every skill works
+   either way.
 
 The four skills, in order:
 
@@ -173,6 +185,12 @@ that keep it safe.
 **Do I need to know how to code?** No. Claude Code runs every command and explains
 what it's doing; the docs cover the few things only you can do (browser sign-ups,
 pasting a secret).
+
+**`/setup` or `/find-sources` says "Unknown command."** Claude Code was started
+from a different folder (or the session began before you cloned the kit). Quit and
+relaunch from inside the kit folder (`cd your-copy && claude`) — or just tell
+Claude to *"read `.claude/skills/<name>/SKILL.md` and follow it"*, which does the
+same thing without a restart.
 
 **Do I need to buy a domain?** No. Your site runs free at
 `<name>.workers.dev`. A custom domain is an optional later upgrade

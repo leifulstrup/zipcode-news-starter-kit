@@ -71,4 +71,6 @@ git add -A && git commit -m "issue: first local issue <WEEK>"
 Tell the user: the pipeline is proven on a real issue. If the quality isn't there
 yet, iterate here — another local issue is cheap, and going live with automation
 multiplies whatever quality exists, it doesn't create it. When they're satisfied,
-the next step is `/go-live`.
+the next step is `/go-live` (if that comes back "Unknown command", restart Claude
+Code from inside the kit folder, or say "read .claude/skills/go-live/SKILL.md and
+follow it" — every skill works both ways).

@@ -226,4 +226,6 @@ git add -A && git commit -m "sources: initial registry for <zip>"
 Tell the user: the registry is live, and as they hear of new sources over time — a
 neighbor's tip, a reader email, something you stumble on during weekly research —
 **`/add-source`** vets and registers them one at a time. Next step now:
-`/first-issue`.
+`/first-issue` (if that comes back "Unknown command", the session wasn't started
+from the kit folder — restart Claude Code from inside it, or say "read
+.claude/skills/first-issue/SKILL.md and follow it"; every skill works both ways).
