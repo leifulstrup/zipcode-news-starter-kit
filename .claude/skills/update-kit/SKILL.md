@@ -47,6 +47,12 @@ not from `gh repo view` (which is itself ambiguous once two remotes exist).
 `gh secret` ignores the default repo even when set, so those commands need an
 explicit `-R` — `/go-live` carries that already.
 
+Both commands are **idempotent and safe to re-run**. They write to
+`.git/config`, which is not version-controlled: an instance that already applied
+either fix by hand is already in the correct state, the merge will not conflict
+over it, and nothing needs undoing. Run `node bin/doctor.mjs` after any update —
+it checks both conditions and prints the fix if either is missing.
+
 Compare versions: read `package.json` → `version` here, and
 `git show template/main:package.json` → `version` upstream. If they match, tell
 the user they are current and stop. Otherwise read

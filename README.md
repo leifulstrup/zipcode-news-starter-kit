@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.7.4** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.7.5** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -201,6 +201,13 @@ to a public repo — a stray push would have published your private settings —
 and left `gh` unable to tell which repo it was working on, which breaks the
 GitHub commands in `/go-live`. Doctor now detects both and prints the exact
 one-line fix for each.
+
+Two things that make this painless: the kit's fixes are in **tracked files**, so
+they arrive with the merge; and the *state* they correct lives in `.git/config`,
+which is not version-controlled. So if you already applied either workaround by
+hand (`gh repo set-default`, or disabling the push URL), your config already
+matches what the fix produces — the new doctor checks will simply pass, and
+there is nothing to undo.
 
 ## Repo map
 

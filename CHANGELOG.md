@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.7.5] — 2026-08-18
+
+### Fixed
+- **Corrected upgrade guidance for v0.7.4.** Instances that applied either
+  v0.7.4 workaround by hand did so in `.git/config`, which is not
+  version-controlled: there is nothing to conflict and nothing to undo. The
+  kit's fixes are in tracked files and arrive with the merge; the state they
+  correct already matches on a hand-patched instance, so the new doctor checks
+  simply pass. Both `/update-kit` commands are idempotent and safe to re-run.
+
+### Added
+- **An honest coverage statement** (docs/TESTING.md): exactly what has been
+  exercised in a real instance and what has never executed by anyone —
+  Cloudflare Workers Builds, the first automated run, `SITE_BASE_URL` and
+  live smoke tests, all four watchdog workflows, a live digest send, and
+  `/go-live` past its opening steps. A kit that implies coverage it does not
+  have is doing the thing it tells publishers not to do. Includes the field
+  test's parting recommendation: **test `/go-live`'s early steps in isolation**
+  — most of its failure surface is repo state and command shape, testable
+  without an account or a cent, and that is where both of its worst bugs were.
+- A concrete case for the published-issues-only rule in `data/accuracy-log.md`:
+  a 6 correct / 0 misleading / 0 wrong record that was zero-eighths of the way
+  to the bar, because every check was pre-publication.
+
+### Field test closed
+The 90744 instance concluded after six reports and six releases (v0.7.0–v0.7.5),
+two of the fixes then verified back in the same instance. It ends with two
+gate-clean unpublished issues, five adapters, 25 logged source candidates, and
+no automation armed (no credential exists, so nothing is half-live). Its own
+retrospective lives in that private repo.
+
 ## [0.7.4] — 2026-08-18
 
 **Update strongly recommended for every instance that has run `/update-kit`.**

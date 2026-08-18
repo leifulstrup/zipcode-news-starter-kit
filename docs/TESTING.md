@@ -81,6 +81,41 @@ For each of the three ZIPs:
       workers.dev URL, `not-published` check passes the morning after.
 - [ ] Rollback drill: `git revert` the issue commit; site follows.
 
+## What has actually been exercised — and what has not
+
+Stated plainly, because a kit that implies coverage it does not have is doing
+the thing it tells publishers not to do.
+
+**Exercised in a real instance** (ZIP 90744, Wilmington CA, six reports across
+one working session; assisted by Claude Opus 5 — recorded because the kit is
+model-agnostic and which model found which silent failure is part of the
+result): `/setup`, `/find-sources` (25 logged source candidates, five working
+adapters), `/first-issue` (two complete gate-clean issues), `/add-source`,
+`/update-kit` (four merges: 20 conflicts → 1 → 0 → 0), the privacy and verify
+gates, `doctor`, `probe-sources`, the rubric and its measurement, and the
+lag-zero gate firing correctly on its first real outing. Plus three discovery
+dry-runs across a rural, a suburban, and a name-collision ZIP.
+
+**Never executed by anyone, as of v0.7.5:**
+
+- Cloudflare Workers Builds connection — including the build-command /
+  deploy-command trap that produces a green build deploying nothing
+- the first automated weekly run in GitHub Actions
+- `SITE_BASE_URL` wiring and `bin/smoke-test.mjs` against a live host
+- all four watchdog workflows (`smoke`, `publication-check`, `sources`, and the
+  weekly pipeline end to end)
+- the daily digest against a live AgentMail send
+- `/go-live` past its opening steps
+
+`/go-live`'s first ninety seconds nonetheless produced the two worst bugs the
+kit has had (a push-capable route from a private instance to the public
+template, and `gh` breakage that disabled every GitHub command the skill
+issues) — both found *before* any account, credential, or deploy existed. The
+lesson for whoever tests this next: **exercise the early steps of `/go-live` in
+isolation rather than only as part of a full run.** Most of its failure surface
+is repo state and command shape, not cloud infrastructure, and that part is
+testable without spending a cent or creating an account.
+
 ## Release checklist — the cross-skill question
 
 Ask of every change, before release:

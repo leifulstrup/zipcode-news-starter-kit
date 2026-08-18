@@ -46,6 +46,11 @@ and accuracy are open empirical questions until the record answers them.
 Pre-publication calibration issues count toward nothing here. Log their checks
 (they are good practice and good history — mark them "pre-publication"), but
 the eight-issue counter starts at the first issue readers could actually reach.
+A concrete case from the field: an instance with a **6 correct / 0 misleading /
+0 wrong** record was **zero-eighths** of the way to the bar, because all six
+checks were pre-publication. Record that distinction in your own log so a later
+reader does not mistake a clean calibration record for progress toward the
+label.
 The label is a promise about the published record; a record nobody could read
 proves nothing to the people the promise is made to. An instance that writes
 many local calibration issues must not arrive at the bar without ever having
