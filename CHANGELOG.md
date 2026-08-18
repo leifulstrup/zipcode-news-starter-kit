@@ -7,6 +7,12 @@ that break an existing publisher's instance (config schema, issue HTML contract,
 workflow interface). Format follows [Keep a Changelog](https://keepachangelog.com);
 dates are UTC.
 
+Release procedure, in one line: bump `package.json`, add the entry here, commit,
+then `git tag v<version> && git push --tags && gh release create v<version>
+--latest --title "..." --notes "<this entry>"` — every version is a [GitHub
+Release](https://github.com/leifulstrup/zipcode-news-starter-kit/releases), not
+just a tag.
+
 Publishers: your own instance's editorial history belongs in `data/lessons-learned.md`
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
