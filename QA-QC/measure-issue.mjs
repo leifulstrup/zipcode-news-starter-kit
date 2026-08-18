@@ -11,7 +11,7 @@
  * Output goes to stdout; for real issues (files under issues/) a copy is archived
  * to QA-QC/measurements/<date>.json so the numbers can be trended across editions.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { basename, resolve, join, sep } from 'node:path';
 
 const file = process.argv[2];
@@ -153,7 +153,41 @@ const abs = resolve(file);
 if (abs.includes(`${sep}issues${sep}`)) {
   const dir = join(config.ROOT, 'QA-QC', 'measurements');
   mkdirSync(dir, { recursive: true });
-  const dest = join(dir, basename(file).replace(/\.html?$/i, '') + '.json');
+  const stem = basename(file).replace(/\.html?$/i, '');
+  const dest = join(dir, stem + '.json');
   writeFileSync(dest, JSON.stringify(out, null, 1));
   console.error(`archived → ${dest}`);
+
+  // Regression check against the previous edition's archived measurement.
+  // A per-issue fix to a rubric dimension is not a fix — it is a patch on one
+  // file, and the next issue regresses it with every gate green (field-tested:
+  // "renters named" went 0 → fixed to 4 → back to 0 one issue later). A drop
+  // TO ZERO from non-zero on a dimension the publisher already decided matters
+  // is far more actionable than any absolute score. Advisory only: warnings,
+  // never a failure — measurement informs judgement, it does not replace it.
+  const prior = readdirSync(dir)
+    .filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.replace('.json', '') < stem)
+    .sort()
+    .pop();
+  if (prior) {
+    const prev = JSON.parse(readFileSync(join(dir, prior), 'utf8'));
+    const WATCH = [
+      ['Q4_interest_breadth', ['renters', 'owners', 'carFree', 'families', 'smallBiz', 'seniors']],
+      ['Q5_actionability', ['docketIdentifiers', 'deadlines', 'contactRoutes', 'datesWithTimes', 'openDataPointers']],
+    ];
+    let regressions = 0;
+    for (const [group, keys] of WATCH) {
+      for (const k of keys) {
+        const was = prev[group]?.[k], now = out[group]?.[k];
+        if (typeof was === 'number' && was > 0 && now === 0) {
+          regressions++;
+          console.error(`::warning::REGRESSION ${group}.${k}: ${was} in ${prior.replace('.json', '')} -> 0 now. ` +
+            `The previous issue met this dimension and this one dropped it entirely. If the fix that ` +
+            `produced the ${was} lived only in that issue's text, move it into prompts/write-issue.md — ` +
+            `a rule that must hold across issues cannot live in one artefact.`);
+        }
+      }
+    }
+    if (!regressions) console.error(`no zero-regressions vs ${prior.replace('.json', '')}`);
+  }
 }

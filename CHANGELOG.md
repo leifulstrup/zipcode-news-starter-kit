@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.7.2] — 2026-08-18
+
+### Added
+- **Regression detection in measure-issue** (advisory): after archiving an
+  issue's measurement, it compares against the previous edition's and warns
+  when a Q4 interest-breadth or Q5 actionability sub-metric drops to zero from
+  non-zero. Field-tested rationale: a rubric fix that lives in one issue's text
+  is a patch, not a fix — "renters named" went 0 → fixed to 4 → back to 0 one
+  issue later with every gate green. A drop to zero on a dimension the
+  publisher already decided matters is more actionable than any absolute score.
+- Editorial brief: how to explain a **declined Tier A item** without tripping
+  the Tier A gate (describe the decision without the trigger vocabulary — the
+  gate stays blunt on purpose; an opt-out wrapper would be a hole for shipping
+  uncorroborated claims); the **shared-street-name boundary trap** (an arterial
+  crossing the city line turns the next city's crime into false local news —
+  place the block, or it doesn't run as local); and the **stale-feed
+  restatement rule** (an unchanged figure from a lagging source must say it is
+  the same window restated, or it manufactures a trend out of a lag).
+
+### Verified in the field (no code change)
+- The v0.7.0 adapter auto-discovery migration: a real instance's update went
+  from 20 conflicts (v0.4.0→v0.6.0) to 1 (v0.6.0→v0.7.0, resolved exactly per
+  the migration note) to 0 (v0.7.0→v0.7.1), with five instance adapters
+  loading unchanged. The lag-zero gate fired correctly on its first real
+  outing. "Better honest and thin than padded" survived a real quiet week.
+
 ## [0.7.1] — 2026-08-18
 
 ### Added

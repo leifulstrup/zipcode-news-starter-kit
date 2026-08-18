@@ -269,6 +269,18 @@ does not corroborate a specific claim. A section reporting a death must itself c
 an official incident source (the hosts in `config/sources.json` →
 `officialIncident`).
 
+**Explaining a DECLINED Tier A item: describe the decision without the trigger
+vocabulary.** The gate scans every section for death/violence terms and demands an
+official incident source in that section — and it cannot distinguish reporting a
+death from declining to report one. Do not weaken the gate for this; word around
+it. If you explain why an item is not running (which an honest brief should),
+write "two serious criminal investigations in a neighboring jurisdiction," not
+the word the gate watches for. This is accurate, passes, and keeps the gate's
+one job intact: no uncorroborated Tier A claim ships, wrapped in a disclaimer or
+not. (Field example: a homicide on a street that crosses the city line —
+correctly declined for jurisdiction, then the About-section explanation of the
+refusal tripped the gate until reworded.)
+
 **A figure you could not reconfirm gets cut, not caveated.** A number carried forward
 from a previous issue whose source could not be reached this week is dropped, with a
 sentence saying the source was unreachable if it is worth mentioning at all.
@@ -319,6 +331,17 @@ the second-best move; the best is not printing it.
   Whenever the publishing agency covers several neighborhoods, read past the
   headline item and state which neighborhood each item lands in — attribute by
   the project's location, never by the release's lead.
+- **A shared street name across a boundary turns the next city's news into
+  false local news.** Long arterials run through multiple jurisdictions, and an
+  outlet's "incident on <your street>" may sit entirely on the other side of
+  the line — highest stakes when the item is crime. Before localizing any item
+  by street name, confirm the block or cross-street falls inside the ZIP; if
+  you cannot place it, it does not run as local.
+- **When a lagging feed has published no new window, say so — never restate the
+  number bare.** An unchanged figure reads as "another week, same count" unless
+  the prose says "this is the same window as last issue; the source has not
+  published a new one." Restating a stale number without that sentence
+  manufactures a trend out of a lag.
 - **Civic organizations are primary for themselves and interested about everything
   else.** A neighborhood association is authoritative for what it said, voted or
   decided. On any contested matter it is a participant, and its membership usually
