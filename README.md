@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.4.2** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.5.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -42,27 +42,26 @@ You need [Claude Code](https://claude.com/claude-code) and
 
 1. **Get your copy**: click **Use this template** on GitHub (or download the ZIP)
    — don't fork; your copy will become a private repo with your own settings.
-2. **Start Claude Code from inside the kit folder**, then type **`/setup`**:
+2. **Open the folder in any Claude** (Claude Code terminal, Cowork, or the
+   desktop app) **and paste this:**
+
+   > Read `.claude/skills/setup/SKILL.md` and follow it.
+
+   That's the whole interface. Each step ends by telling you the next one, and
+   every step is invoked the same way — paste the sentence, Claude does the rest.
+
+3. **Lost at any point?** Run:
 
    ```
-   cd path/to/your-copy
-   claude
+   node bin/next-step.mjs
    ```
 
-   **A note on typing the `/commands`.** The skills are part of this kit, and how
-   you invoke them depends on where you're running Claude:
+   It looks at your folder — no AI involved — and prints exactly where you are,
+   what's done, and the precise sentence to paste for the next step.
 
-   - **Claude Code terminal**: typed commands (`/setup`, `/find-sources`, …) work,
-     but only when Claude Code was *launched from inside the kit folder*. Started
-     elsewhere? You'll get "Unknown command" — restart from the right folder.
-   - **Claude Cowork / desktop app**: the input box only recognizes its own
-     built-in commands, so typing `/first-issue` shows *"isn't a recognized
-     command here."* That's normal. Just ask in plain words instead.
-
-   The plain-words form works **everywhere**, no restart, no setup:
-   *"read `.claude/skills/setup/SKILL.md` and follow it."* Every skill in this
-   kit is designed to work that way — a typed `/command` is only a shortcut for
-   it.
+(Tip for terminal users: if you launch Claude Code from *inside* the kit folder,
+typed shortcuts like `/setup` and `/find-sources` also work. They're the same
+skills — the pasted sentence is the form that works everywhere.)
 
 The four skills, in order:
 

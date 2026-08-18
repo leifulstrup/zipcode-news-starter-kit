@@ -17,6 +17,23 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.5.0] — 2026-08-18
+
+### Added
+- **`bin/next-step.mjs` (`npm run next`)** — deterministic onboarding orientation.
+  Inspects the folder's actual state (placeholder config, registered sources,
+  local issues, live-site host) and prints where you are in the four-step
+  journey, what's done, and the exact sentence to paste to any Claude for the
+  next step. Motivated by field testing: most early confusion was about
+  *sequencing and invocation*, so orientation now lives in code where it works
+  identically regardless of the assisting model's capability. Live-state
+  detection reads what `/go-live` writes into the repo, not the git remote (a
+  fresh clone has a remote from minute one).
+
+### Changed
+- README Quickstart now leads with the paste-one-sentence interface (works in
+  every Claude surface); typed `/commands` are presented as a terminal-user tip.
+
 ## [0.4.2] — 2026-08-18
 
 ### Fixed

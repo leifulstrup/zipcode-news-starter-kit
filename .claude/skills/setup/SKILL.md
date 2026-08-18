@@ -142,4 +142,5 @@ folder), and Claude Cowork / the desktop app never accepts typed project
 commands at all ("isn't a recognized command here" — normal, not a setup
 problem). The form that works everywhere is plain words: "read
 .claude/skills/find-sources/SKILL.md and follow it". Every skill in this kit
-works that way.
+works that way. Also tell them: any time they're lost, `node bin/next-step.mjs`
+looks at the folder and prints exactly what to do next — no AI required.
