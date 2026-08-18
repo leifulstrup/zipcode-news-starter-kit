@@ -1,5 +1,8 @@
 # zipcode-news-starter-kit
 
+**Version 0.3.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+the kit is versioned.
+
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
 and operate, published on your own site, for free-tier money.
 
@@ -69,7 +72,8 @@ hard way.
 3. **Disclosure everywhere.** Readers are told an AI wrote this — on the page, in
    the PDF, in the feed, in the metadata — and the masthead carries
    "(Experimental)" until eight consecutive issues with a clean accuracy record
-   earn its removal.
+   make it eligible for removal — and you explicitly approve the change. Nothing
+   removes that label automatically.
 4. **Leads, not findings.** The publication tells readers to follow the sources
    before acting; where it disagrees with an official source, the official source is
    right. Every section ends with its own source list, URLs printed visibly.
@@ -162,9 +166,11 @@ pasting a secret).
 The writing run is the real cost: covered by a Claude Pro/Max subscription token, or
 a few dollars of API usage per issue depending on model and research depth.
 
-**Can I use a different model?** The weekly workflow has an alternate-model path and
-the editorial brief is model-agnostic by design — one brief, any writer. The Claude
-path is the maintained one.
+**Can I use a different model?** Yes. Only one pipeline step is model-driven, and
+the gates judge its output no matter who wrote it. The weekly workflow ships five
+paths — Claude (the default and the one the brief was tuned on), Gemini, OpenAI's
+Codex CLI, GitHub Copilot CLI, and a `custom` hook for any other agentic CLI. One
+brief, any writer: see `docs/MODEL-PROVIDERS.md` for setup and honest caveats.
 
 **How do I stop it?** Disable the workflows in your repo's Actions tab (or delete
 the repo). The site stays up until you remove the Cloudflare project. To skip a

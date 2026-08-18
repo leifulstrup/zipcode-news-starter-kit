@@ -28,12 +28,16 @@ on:
   workflow_dispatch:
     inputs:
       agent:
+        # claude and gemini are first-class (maintained actions). codex and
+        # copilot run their vendors' CLIs directly; custom runs your own script.
+        # Setup for every path: docs/MODEL-PROVIDERS.md. Set repo variable
+        # DEFAULT_AGENT to change what the weekly cron uses.
         description: 'Which model writes the issue'
         type: choice
-        options: [claude, gemini]
+        options: [claude, gemini, codex, copilot, custom]
         default: claude
       model:
-        description: 'Claude model (ignored on the gemini path)'
+        description: 'Claude model (Claude path only)'
         type: choice
         options:
           - claude-sonnet-5
@@ -180,6 +184,71 @@ jobs:
             - Do NOT end your turn until issues/${{ steps.date.outputs.week }}.html
               exists on disk. Read the file back to verify before you finish.
             A turn that ends without that file having been written is a failed run.
+
+      # The remaining three paths run a CLI directly instead of a maintained
+      # GitHub Action, so they share one prompt file. The prompt is the SAME
+      # contract as the two paths above — the branches must stay equivalent.
+      - name: Prepare the shared agent prompt (codex/copilot/custom)
+        if: env.AGENT == 'codex' || env.AGENT == 'copilot' || env.AGENT == 'custom'
+        env:
+          WEEK: ${{ steps.date.outputs.week }}
+        run: |
+          cat > "$RUNNER_TEMP/agent-prompt.txt" <<EOF
+          Read prompts/write-issue.md and follow it exactly.
+          The issue date is ${WEEK}.
+          The fetched facts are in data/facts/${WEEK}.json.
+          Write issues/${WEEK}.html and nothing else.
+
+          THIS IS A NON-INTERACTIVE RUN. Nobody is watching and nothing will wake
+          you up. The process exits the moment your turn ends, so:
+          - Do all research yourself, inline.
+          - Do NOT delegate to sub-agents or background tasks; anything still
+            running when you stop is simply killed.
+          - Do NOT end your turn until issues/${WEEK}.html exists on disk. Read
+            the file back to verify before you finish.
+          A turn that ends without that file having been written is a failed run.
+          EOF
+          echo "prompt prepared ($(wc -c < "$RUNNER_TEMP/agent-prompt.txt") bytes)"
+
+      # OpenAI path via the Codex CLI. Vendor CLI flags move fast — if this step
+      # breaks, run `codex exec --help` locally and see docs/MODEL-PROVIDERS.md.
+      # The bypass flag is appropriate ONLY here: an ephemeral CI runner is
+      # already a sandbox, and the agent needs network access for research.
+      - name: Write the issue (OpenAI Codex CLI)
+        if: env.AGENT == 'codex'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm install -g @openai/codex
+          codex exec --dangerously-bypass-approvals-and-sandbox \
+            "$(cat "$RUNNER_TEMP/agent-prompt.txt")"
+
+      # GitHub Copilot path via the Copilot CLI. Needs a personal access token
+      # for an account WITH a Copilot subscription in secret COPILOT_CLI_TOKEN —
+      # the workflow's default GITHUB_TOKEN cannot use Copilot. Flags move fast;
+      # see docs/MODEL-PROVIDERS.md.
+      - name: Write the issue (GitHub Copilot CLI)
+        if: env.AGENT == 'copilot'
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+        run: |
+          npm install -g @github/copilot
+          copilot -p "$(cat "$RUNNER_TEMP/agent-prompt.txt")" --allow-all-tools
+
+      # Escape hatch for any other agentic CLI: you write bin/write-issue-custom.sh
+      # (contract + example in docs/MODEL-PROVIDERS.md), it gets the week and the
+      # prompt file, and it must leave issues/<week>.html on disk. The gates below
+      # judge the output identically no matter what produced it.
+      - name: Write the issue (custom agent)
+        if: env.AGENT == 'custom'
+        env:
+          WEEK: ${{ steps.date.outputs.week }}
+        run: |
+          if [ ! -x bin/write-issue-custom.sh ]; then
+            echo "::error::agent=custom but bin/write-issue-custom.sh does not exist or is not executable. See docs/MODEL-PROVIDERS.md for the contract and an example."
+            exit 1
+          fi
+          ./bin/write-issue-custom.sh "$WEEK" "$RUNNER_TEMP/agent-prompt.txt"
 
       # ---------------------------------------------------------------
       # 3. GATES — refuse to publish a bad issue, whichever model wrote it.

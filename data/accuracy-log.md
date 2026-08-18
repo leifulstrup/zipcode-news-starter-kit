@@ -38,10 +38,17 @@ A verdict is not the end of the entry — route the fix to where it belongs:
 
 ## The "(Experimental)" bar
 
-The masthead label comes off after **eight consecutive issues with no wrong claim
-and at most one misleading claim per issue**, with this log public. Not before,
-and never by preference — usefulness and accuracy are open empirical questions
-until the record answers them.
+The masthead label becomes eligible to come off after **eight consecutive issues
+with no wrong claim and at most one misleading claim per issue**, with this log
+public. Not before, and never by preference — usefulness and accuracy are open
+empirical questions until the record answers them.
+
+Meeting the bar does not remove the label by itself. When the record qualifies,
+whoever notices (you, or an agent reviewing this log) **proposes** the change with
+the evidence — the eight issues and their verdicts — and `site.config.json →
+experimental` is set to `false` only on the publisher's explicit say-so. The label
+is a public promise about the record; changing it is the publisher's call alone,
+never an automated side effect.
 
 ## Running count
 

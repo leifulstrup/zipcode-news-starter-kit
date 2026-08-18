@@ -84,8 +84,11 @@ address reads this file — no script hardcodes any of them.
 
 Rules:
 - `experimental: true` appends "(Experimental)" to the masthead everywhere the name
-  appears. It is removed only by the accuracy-log criterion (8 consecutive issues, no
-  wrong claim, ≤1 misleading each), never by preference.
+  appears. It becomes *eligible* for removal only by the accuracy-log criterion
+  (8 consecutive issues, no wrong claim, ≤1 misleading each), never by preference —
+  and even then, **no agent or automated process flips it**. When the bar is met,
+  propose the change to the publisher with the evidence; edit `experimental` only
+  on their explicit approval.
 - `domain: ""` means the site serves from `<workerName>.<account>.workers.dev` (free).
   Setting a domain changes only links/canonical URLs — deploy mechanics are identical.
 - `contactEmail: ""` means the issue carries no contact route and the gates do not

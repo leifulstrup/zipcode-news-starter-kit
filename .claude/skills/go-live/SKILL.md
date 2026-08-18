@@ -44,6 +44,13 @@ passed the local gauntlet (/first-issue). If not, stop and send them there first
    the credential that is set — an empty secret shadowing a real one is a known
    failure mode the workflow already guards against.
 
+   If the user prefers a different provider for the weekly writer (Gemini, OpenAI
+   Codex, GitHub Copilot, or any agentic CLI via the custom hook), walk them
+   through `docs/MODEL-PROVIDERS.md` instead — it lists the secret each path
+   needs and the `DEFAULT_AGENT` repo variable that makes the cron use it.
+   Claude remains the default and the path the brief was tuned on; say so, then
+   set up what they choose.
+
 ## 2. Cloudflare
 
 1. **Account**: dash.cloudflare.com → Sign up (only they can do this; free plan).
