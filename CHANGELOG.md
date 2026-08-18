@@ -17,6 +17,17 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.4.2] — 2026-08-18
+
+### Fixed
+- **Typed skill commands don't work in Claude Cowork / the desktop app** (second
+  live-testing report): Cowork's input box only recognizes built-in commands, so
+  typing `/first-issue` shows "isn't a recognized command here" regardless of
+  setup. Quickstart, FAQ, and every skill hand-off now distinguish the two
+  environments and lead with the invocation that works everywhere: *"read
+  `.claude/skills/<name>/SKILL.md` and follow it"* — a typed `/command` is only a
+  terminal shortcut for that.
+
 ## [0.4.1] — 2026-08-18
 
 ### Fixed

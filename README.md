@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.4.1** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.4.2** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -49,12 +49,20 @@ You need [Claude Code](https://claude.com/claude-code) and
    claude
    ```
 
-   The folder matters: the `/setup`, `/find-sources`, etc. commands are part of
-   this kit, and Claude Code only registers them from the folder it was launched
-   in. If any of them comes back **"Unknown command"**, either restart Claude Code
-   from inside the kit folder — or skip the slash command and tell Claude:
-   *"read `.claude/skills/setup/SKILL.md` and follow it."* Every skill works
-   either way.
+   **A note on typing the `/commands`.** The skills are part of this kit, and how
+   you invoke them depends on where you're running Claude:
+
+   - **Claude Code terminal**: typed commands (`/setup`, `/find-sources`, …) work,
+     but only when Claude Code was *launched from inside the kit folder*. Started
+     elsewhere? You'll get "Unknown command" — restart from the right folder.
+   - **Claude Cowork / desktop app**: the input box only recognizes its own
+     built-in commands, so typing `/first-issue` shows *"isn't a recognized
+     command here."* That's normal. Just ask in plain words instead.
+
+   The plain-words form works **everywhere**, no restart, no setup:
+   *"read `.claude/skills/setup/SKILL.md` and follow it."* Every skill in this
+   kit is designed to work that way — a typed `/command` is only a shortcut for
+   it.
 
 The four skills, in order:
 
@@ -186,11 +194,13 @@ that keep it safe.
 what it's doing; the docs cover the few things only you can do (browser sign-ups,
 pasting a secret).
 
-**`/setup` or `/find-sources` says "Unknown command."** Claude Code was started
-from a different folder (or the session began before you cloned the kit). Quit and
-relaunch from inside the kit folder (`cd your-copy && claude`) — or just tell
-Claude to *"read `.claude/skills/<name>/SKILL.md` and follow it"*, which does the
-same thing without a restart.
+**Typing a kit command says "Unknown command" or "isn't a recognized command
+here."** Two known causes, one universal fix. In the **Claude Code terminal**, it
+means the session wasn't started from inside the kit folder — relaunch with
+`cd your-copy && claude`. In **Claude Cowork / the desktop app**, typed project
+commands are simply not supported in the input box (only built-ins are). Either
+way, just say it in plain words: *"read `.claude/skills/<name>/SKILL.md` and
+follow it."* That is the same skill, invoked the way that works everywhere.
 
 **Do I need to buy a domain?** No. Your site runs free at
 `<name>.workers.dev`. A custom domain is an optional later upgrade

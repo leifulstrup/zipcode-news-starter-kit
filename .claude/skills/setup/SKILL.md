@@ -135,9 +135,11 @@ the interview worth remembering (e.g. "user wants heavy schools coverage").
 Close by telling the user: configuration is done and committed; the next step is
 `/find-sources`, and it is the step where the newsletter starts to become theirs.
 
-When handing off, include this: if `/find-sources` comes back "Unknown command",
-the session was not started from the kit folder — slash commands register only
-from the folder Claude Code was launched in. Two fixes, either is fine: restart
-Claude Code from inside the kit folder, or skip the slash command entirely and
-say "read .claude/skills/find-sources/SKILL.md and follow it" — every skill in
-this kit works both ways, and this one does too.
+When handing off, include this: typed `/commands` are only a shortcut, and two
+environments break the shortcut — a Claude Code terminal launched from a
+different folder says "Unknown command" (fix: restart from inside the kit
+folder), and Claude Cowork / the desktop app never accepts typed project
+commands at all ("isn't a recognized command here" — normal, not a setup
+problem). The form that works everywhere is plain words: "read
+.claude/skills/find-sources/SKILL.md and follow it". Every skill in this kit
+works that way.
