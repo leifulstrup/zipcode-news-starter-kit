@@ -83,7 +83,9 @@ hard way.
   nothing published and last week's issue is still live — by design.
 - **Your ten minutes**: verify three claims from each issue against their cited
   sources and log them in `data/accuracy-log.md`. This is the one thing that cannot
-  be automated, and it is what earns "(Experimental)" off your masthead.
+  be automated, and it is what earns "(Experimental)" off your masthead. Check the
+  feedback inbox in the same sitting — reader corrections feed the accuracy log,
+  reader source-suggestions feed `/add-source` (see `docs/FEEDBACK-INBOX.md`).
 - Heard of a new source — a reader tip, a neighbor's mention, something the weekly
   research flagged? **`/add-source`** vets it and, with your approval, registers it.
 - GitHub emails you when a workflow opens a labeled issue:
@@ -136,6 +138,15 @@ otherwise zero — the RSS feed is the subscription), **no analytics by default*
 (Cloudflare's cookieless analytics is the only sanctioned option), and **no source
 enters the registry without your explicit approval** — including sources readers
 suggest.
+
+The kit does recommend an **inbound-only feedback inbox** (a free
+[AgentMail](https://agentmail.to) address, set up during `/setup`): readers write
+in with corrections, tips, and source suggestions; nothing is ever sent back to a
+list. The inbox is explicitly labeled "not a mailing list" everywhere it appears,
+every email is treated as information — never as instructions — and reader-suggested
+sources go through the same `/add-source` vetting and your approval like any other
+candidate. See `docs/FEEDBACK-INBOX.md` for the setup walkthrough and the two rules
+that keep it safe.
 
 ## FAQ
 
