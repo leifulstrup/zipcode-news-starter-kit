@@ -18,7 +18,7 @@
  * Run this after editing any gate, any fixture, or config/ — and once right
  * after cloning, to prove the kit works on your machine.
  */
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -108,6 +108,58 @@ try {
   rows.push({ result: 'FAIL', case: 'source-classes loads', detail: e.message });
 }
 
+// ---------------------------------------------------------------------------
+// Repo-state checks. Not gates against fixtures — these catch a repo left in a
+// state that will break a LATER step, which is the failure class /update-kit
+// created: adding the template remote silently broke every `gh` command in
+// /go-live, with weeks between cause and symptom. Doctor is what publishers are
+// told to run when something is wrong, so the diagnosis belongs here.
+// ---------------------------------------------------------------------------
+function git(args) {
+  try {
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch { return null; }
+}
+
+const remotes = (git(['remote']) || '').split('\n').filter(Boolean);
+if (remotes.length > 1) {
+  // 1. PRIVACY: a non-origin remote must not be push-capable. The template is a
+  //    public repo; pushing this private instance to it would publish
+  //    config/privacy.json — publisher name, email, home-area coordinates —
+  //    bypassing the privacy gate entirely (the gate scans issues, not remotes).
+  for (const r of remotes.filter(r => r !== 'origin')) {
+    const pushUrl = git(['remote', 'get-url', '--push', r]);
+    const disabled = !pushUrl || /^DISABLED$/i.test(pushUrl) || !/^(https?:|git@|ssh:)/i.test(pushUrl);
+    rows.push({
+      result: disabled ? 'PASS' : 'FAIL',
+      case: `remote "${r}" cannot be pushed to`,
+      detail: disabled ? '' :
+        `PUSHABLE (${pushUrl}). A stray push would publish this private instance — including ` +
+        `config/privacy.json — to that repo. Fix:  git remote set-url --push ${r} DISABLED`,
+    });
+    if (!disabled) failures++;
+  }
+
+  // 2. USABILITY: with >1 remote, gh cannot resolve the repo and every gh
+  //    command in /go-live fails with a cryptic "multiple remotes detected".
+  const resolved = git(['config', '--get-regexp', String.raw`^remote\..*\.gh-resolved$`]);
+  const originUrl = git(['remote', 'get-url', 'origin']) || '';
+  // Only a real GitHub origin yields a usable owner/repo slug; anything else
+  // (a local path, a non-GitHub host) must fall back to a placeholder rather
+  // than printing a filesystem path as if it were a repo name.
+  const m = originUrl.match(/^(?:git@github\.com:|https:\/\/github\.com\/)([^/]+\/[^/]+?)(?:\.git)?$/);
+  const slug = m ? m[1] : '<owner>/<repo>';
+  rows.push({
+    result: resolved ? 'PASS' : 'FAIL',
+    case: 'gh can resolve which repo this is',
+    detail: resolved ? '' :
+      `${remotes.length} remotes and no gh default — every "gh" command will fail with ` +
+      `"multiple remotes detected". Fix:  gh repo set-default ${slug}` +
+      `   (gh secret also needs -R ${slug}; it ignores the default.)`,
+  });
+  if (!resolved) failures++;
+}
+
 const width = Math.max(...rows.map(r => r.case.length));
 console.log('\ndoctor — gate self-test against fixtures/\n');
 for (const r of rows)
@@ -115,7 +167,7 @@ for (const r of rows)
 console.log('');
 
 if (failures) {
-  console.error(`DOCTOR FAILED — ${failures} gate(s) mis-fired. A gate that cannot catch its fixture will not catch the real thing. Fix the gate (or the fixture) before publishing anything.`);
+  console.error(`DOCTOR FAILED — ${failures} check(s) failed. A gate that cannot catch its fixture will not catch the real thing; a repo-state failure will break a later step. Each line above says what to fix. Do not publish until this is green.`);
   process.exit(1);
 }
 console.log(`doctor passed — ${rows.length} checks. The gates catch what they claim to catch.`);

@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.7.4] — 2026-08-18
+
+**Update strongly recommended for every instance that has run `/update-kit`.**
+Both fixes concern repo state that `/update-kit` created; if you have updated
+before, run `node bin/doctor.mjs` after taking this release — it now detects and
+prints the fix for both conditions.
+
+### Fixed
+- **PRIVACY: the template remote was push-capable to a public repo.**
+  `git remote add` creates a push URL as well as a fetch URL, so every updated
+  instance had a working route by which `git push template` — or a `--all`
+  push, or an agent being helpful — would publish that private instance,
+  including `config/privacy.json` (publisher name, personal email, home-area
+  coordinate prefixes), into the public template repository. The privacy gate
+  could not see it: the gate scans issues, not repo plumbing. `/update-kit` now
+  creates the remote with `git remote set-url --push template DISABLED`, with a
+  do-not-"fix"-this comment, and doctor fails on any non-origin remote that is
+  still pushable.
+- **`/update-kit` silently broke every `gh` command in `/go-live`.** With two
+  remotes, `gh` cannot resolve the repo and fails with "multiple remotes
+  detected" — at the step where a non-technical publisher is already out of
+  their depth, caused by an unrelated, successful, possibly weeks-old step.
+  `/update-kit` now runs `gh repo set-default` (resolved from `origin`'s URL,
+  since `gh repo view` is itself ambiguous once two remotes exist), `/go-live`
+  carries explicit `-R <owner>/<repo>` on `gh secret` commands (which ignore the
+  default — a gh quirk, documented so nobody tidies it away), and doctor
+  detects the unresolved state and prints the one command that fixes it.
+
+### Added
+- **Repo-state checks in `bin/doctor.mjs`** (2 new checks, verified in all four
+  states): they catch a repo left in a condition that will break a *later* step,
+  as distinct from the fixture gates.
+- **The cross-skill release-checklist question** (docs/TESTING.md): *does this
+  change alter repo state that a later skill depends on?* — with the
+  push-capable-remote and gh-resolution cases as worked examples, and the rule
+  that the diagnosis belongs in doctor rather than in a document.
+
 ## [0.7.3] — 2026-08-18
 
 ### Fixed

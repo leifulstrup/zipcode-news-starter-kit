@@ -17,9 +17,35 @@ Explain that to the user in a sentence before starting, then proceed.
 ## 1. See what's new before touching anything
 
 ```
-git remote get-url template 2>/dev/null || git remote add template https://github.com/leifulstrup/zipcode-news-starter-kit.git
+git remote get-url template >/dev/null 2>&1 || {
+  git remote add template https://github.com/leifulstrup/zipcode-news-starter-kit.git
+  # PUSH IS DISABLED ON PURPOSE — DO NOT "FIX" THIS.
+  # `git remote add` creates a push URL as well as a fetch URL, and the template
+  # is a PUBLIC repo. A stray `git push template`, `git push --all`, or an agent
+  # being helpful about "pushing everything" would publish this private
+  # instance's config/privacy.json — publisher name, personal email, home-area
+  # coordinates — into a public repository, bypassing the privacy gate entirely
+  # (the gate scans issues, not repo state). The exposure is worst for anyone
+  # with write access to the template. Fetch-only is the only safe shape.
+  git remote set-url --push template DISABLED
+}
 git fetch template
 ```
+
+Then repair `gh`'s repo resolution, because adding a second remote breaks it:
+
+```
+ORIGIN_REPO=$(git remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')
+command -v gh >/dev/null && gh repo set-default "$ORIGIN_REPO"
+```
+
+Why this matters: with two remotes, `gh` cannot tell which repo it is acting on
+and every `gh` command fails with *"multiple remotes detected"* — including the
+ones `/go-live` tells the user to run, possibly weeks later, with no visible
+connection to the update that caused it. Resolve the repo from `origin`'s URL,
+not from `gh repo view` (which is itself ambiguous once two remotes exist).
+`gh secret` ignores the default repo even when set, so those commands need an
+explicit `-R` — `/go-live` carries that already.
 
 Compare versions: read `package.json` → `version` here, and
 `git show template/main:package.json` → `version` upstream. If they match, tell

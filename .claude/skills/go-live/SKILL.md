@@ -34,9 +34,18 @@ passed the local gauntlet (/first-issue). If not, stop and send them there first
 4. **Model credential** — the one secret GitHub needs. Two options; explain the
    difference in two sentences:
    - **Claude subscription** (Pro/Max): have them run `! claude setup-token`, copy
-     the token, then `gh secret set CLAUDE_CODE_OAUTH_TOKEN` (paste when prompted).
+     the token, then `gh secret set CLAUDE_CODE_OAUTH_TOKEN -R <owner>/<repo>`
+     (paste when prompted).
    - **API key** (pay per use): from console.anthropic.com, then
-     `gh secret set ANTHROPIC_API_KEY`.
+     `gh secret set ANTHROPIC_API_KEY -R <owner>/<repo>`.
+
+   **Keep the `-R <owner>/<repo>` on every `gh secret` command — do not tidy it
+   away.** `gh secret` ignores the repo default that `gh repo set-default` sets,
+   so on any instance with more than one git remote (every instance that has run
+   `/update-kit`) a bare `gh secret set` fails with "multiple remotes detected".
+   The other `gh` commands in this skill resolve correctly from the default, which
+   is why `-R` appears here and not on them. If any `gh` command reports multiple
+   remotes, run `node bin/doctor.mjs` — it diagnoses and prints the one-line fix.
    Two traps to state out loud: the secret must be an **Actions** secret (the `gh
    secret set` default — correct); and a token pasted from a narrow terminal can
    contain a line break that breaks auth — if the first run fails instantly at zero

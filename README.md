@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.7.3** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.7.4** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -194,6 +194,13 @@ and telling you what new capability to try first.
 
 Safe to run any time; if you're current, it says so and stops. Compare your
 `package.json` version against the Releases page whenever you're curious.
+
+**If you updated before v0.7.4, take this one and then run
+`node bin/doctor.mjs`.** Earlier updates left the template remote push-capable
+to a public repo — a stray push would have published your private settings —
+and left `gh` unable to tell which repo it was working on, which breaks the
+GitHub commands in `/go-live`. Doctor now detects both and prints the exact
+one-line fix for each.
 
 ## Repo map
 

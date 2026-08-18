@@ -88,7 +88,12 @@ deciding whether something may be published must **fail closed**: take the
 protective branch by default and require positive evidence to release, because the
 inputs that defeat a keyword classifier are the ones carrying the least
 information, and those are common. Check a privacy change against the previous
-*unsafe* output while it is still available. Public dockets are the sharpest test:
+*unsafe* output while it is still available. **A privacy gate that scans
+documents cannot see a leak that travels by repo plumbing**: adding a git remote
+creates a push URL as well as a fetch one, and a private instance pushed to a
+public repo publishes its whole config — name, email, home-area coordinates —
+without any issue ever being written. Any remote that exists only to fetch must
+have its push URL disabled at creation, and the check for it belongs in doctor. Public dockets are the sharpest test:
 the record genuinely is public and an ordinary paper would print the address — this
 publication holds a stricter line on purpose, and residential cases are
 aggregate-only.

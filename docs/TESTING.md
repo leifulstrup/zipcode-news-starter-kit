@@ -81,6 +81,34 @@ For each of the three ZIPs:
       workers.dev URL, `not-published` check passes the morning after.
 - [ ] Rollback drill: `git revert` the issue commit; site follows.
 
+## Release checklist — the cross-skill question
+
+Ask of every change, before release:
+
+**Does this alter repo state that a later skill depends on?**
+
+This is the failure class that ordinary testing misses, because cause and
+symptom are separated by days and by a *successful* intervening step. The
+worked example: `/update-kit` added a second git remote, which silently broke
+every `gh` command in `/go-live` — a publisher hit a cryptic "multiple remotes
+detected" at the step where they were already out of their depth, with no way
+to connect it to an update they ran last week. The same remote was push-capable
+to a public repo, opening a route for a private instance's
+`config/privacy.json` to be published — bypassing the privacy gate entirely,
+since the gate scans issues, not repo state.
+
+Concretely, for any change that touches git config, remotes, hooks, workflow
+permissions, credentials, or file locations other skills read:
+
+- [ ] Name the later skills that read this state, and re-read their commands.
+- [ ] Ask whether the new state is *push-capable* or *credential-bearing* in a
+      direction the publisher never intended.
+- [ ] Add a `bin/doctor.mjs` repo-state check that detects the bad state and
+      prints the exact fix — doctor is what publishers are told to run when
+      something is wrong, so diagnosis belongs there rather than in a doc.
+
+Only `/update-kit` mutates git configuration today; it is the one to watch.
+
 ## Results log
 
 Keep one row per ZIP per test round, in this file or beside it:
