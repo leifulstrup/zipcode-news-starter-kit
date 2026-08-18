@@ -26,5 +26,13 @@
     "Parks & Recreation",
     "Mark Your Calendar"
   ],
-  "geographyNote": ""
+  "geographyNote": "",
+  "daily": {
+    "enabled": false,
+    "deliverTo": "",
+    "sendQuietDays": false,
+    "hourUtc": 13,
+    "model": "claude-haiku-4-5-20251001",
+    "maxItems": 12
+  }
 }

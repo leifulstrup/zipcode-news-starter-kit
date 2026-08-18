@@ -73,6 +73,8 @@ if (next) {
   console.log('    and check the feedback inbox (docs/FEEDBACK-INBOX.md).');
   console.log('  - Heard of a new source? Paste to Claude:');
   console.log('        Read .claude/skills/add-source/SKILL.md and follow it.');
+  console.log('  - Want a private daily "what changed" email? Paste to Claude:');
+  console.log('        Read .claude/skills/enable-daily/SKILL.md and follow it.');
   console.log('  - Silence from the watchdogs means the system is working.');
 }
 console.log('\nHealth check any time: node bin/doctor.mjs\n');

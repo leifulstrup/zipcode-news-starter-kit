@@ -193,6 +193,11 @@ the user approve, reject, or park **each one**.
 - If the standing `sections` list in `site.config.json` doesn't fit what you found
   (no transit agency; a big college that deserves a section), propose edits and
   apply what the user approves.
+- When an approved source exposes an **RSS/Atom feed** (news outlets, agenda
+  systems, libraries often do), record the feed URL in `config/feeds.json` —
+  the optional daily digest (`/enable-daily`, see `docs/DAILY-DIGEST.md`)
+  watches those feeds for what's new each day. Verify the feed URL with a live
+  fetch like any other source claim.
 
 ## 6. Wire up what has an API
 

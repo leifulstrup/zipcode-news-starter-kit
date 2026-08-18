@@ -17,6 +17,29 @@ Publishers: your own instance's editorial history belongs in `data/lessons-learn
 and git — this file tracks the **kit framework** only. After pulling a kit update
 into your instance, run `node bin/doctor.mjs` before your next publish.
 
+## [0.6.0] — 2026-08-18
+
+### Added
+- **Optional daily email digest** (`docs/DAILY-DIGEST.md`, `/enable-daily`): a
+  private "what's genuinely new since yesterday" radar emailed to the publisher
+  via AgentMail — send-to-self only, enforced in code (exactly one recipient,
+  must match `daily.deliverTo`), never a mailing list. Cost model: delta
+  detection is deterministic (`bin/daily-delta.mjs` — RSS feeds by unseen links,
+  daily-flagged adapters by block diff, committed state); a **quiet day runs no
+  model and sends no email (~$0)**; an active day runs one small-model
+  summarize-only pass (default Haiku, ≤30 turns, web research disabled in the
+  workflow's allowed tools, not just the prompt). `bin/verify-digest.mjs` gates
+  the output: every URL must trace to the delta file, so recycled or invented
+  items cannot pad a slow day. Privacy gate runs on the digest too. Disabled by
+  default; `/enable-daily` interviews, wires feeds from the approved registry,
+  sets the AgentMail secret, and test-fires before enabling the cron.
+- **`/update-kit`** — pulls upstream template improvements into an instance:
+  connects the template remote (template copies have no git link to the
+  template), summarizes the CHANGELOG versions you're behind before changing
+  anything, merges with a strict ownership rule (your config/sources/issues/
+  schedules always win; kit code takes the update), then verifies with doctor/
+  build/next-step. README gains "Getting kit updates into your copy" + FAQ.
+
 ## [0.5.0] — 2026-08-18
 
 ### Added

@@ -1,0 +1,158 @@
+# Daily digest — the publisher's private radar email. OPT-IN and cheap by design:
+#
+#   delta (deterministic, free)  →  quiet day? STOP — no model, no email
+#                                →  news day?  one small-model summarize run,
+#                                              gate-checked, emailed to the
+#                                              publisher (send-to-self only)
+#
+# This never touches the public site. The weekly issue remains the flagship;
+# the digest exists so "I want something daily" doesn't cost a full research
+# run every day. Enable with /enable-daily; disable by setting
+# site.config.json → daily.enabled to false and committing.
+name: Daily digest
+
+on:
+  schedule:
+    # Keep this hour in sync with site.config.json → daily.hourUtc
+    # (/enable-daily rewrites this line). GitHub cron is UTC and ignores DST —
+    # a 13:00 UTC digest is 9am US Eastern in summer, 8am in winter.
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Digest date YYYY-MM-DD (blank = today UTC)'
+        type: string
+      force_send:
+        description: 'Run the model and send even on a quiet day (testing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: daily-digest
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    # Summarization, not research: if this takes longer than 15 minutes,
+    # something is wrong and stopping is cheaper than waiting.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve date and config
+        id: cfg
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          [ -z "$DATE" ] && DATE=$(date -u +%F)
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          # Cheap gate: the whole workflow is a no-op until the publisher opts in.
+          ENABLED=$(node -p "JSON.parse(require('fs').readFileSync('site.config.json','utf8')).daily?.enabled===true")
+          echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
+          MODEL=$(node -p "JSON.parse(require('fs').readFileSync('site.config.json','utf8')).daily?.model||'claude-haiku-4-5-20251001'")
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+          QUIETSEND=$(node -p "JSON.parse(require('fs').readFileSync('site.config.json','utf8')).daily?.sendQuietDays===true")
+          echo "quietsend=$QUIETSEND" >> "$GITHUB_OUTPUT"
+
+      - name: Digest is not enabled — nothing to do
+        if: steps.cfg.outputs.enabled != 'true'
+        run: |
+          echo "::notice::site.config.json daily.enabled is false — the daily digest is opt-in. Run /enable-daily to turn it on."
+
+      - name: Collect the delta (deterministic — no model)
+        if: steps.cfg.outputs.enabled == 'true'
+        id: delta
+        run: |
+          node bin/daily-delta.mjs --date "${{ steps.cfg.outputs.date }}"
+          QUIET=$(node -p "JSON.parse(require('fs').readFileSync('data/daily/${{ steps.cfg.outputs.date }}.json','utf8')).quiet")
+          echo "quiet=$QUIET" >> "$GITHUB_OUTPUT"
+
+      - name: Quiet day — stop before spending anything
+        if: steps.cfg.outputs.enabled == 'true' && steps.delta.outputs.quiet == 'true' && steps.cfg.outputs.quietsend != 'true' && github.event.inputs.force_send != 'true'
+        run: |
+          echo "::notice::Quiet day — nothing genuinely new since the last digest. No model run, no email. This is the cost model working, not a failure."
+
+      # The ONLY model step, and a deliberately small one: a fixed-size
+      # summarization of the delta file. No WebSearch/WebFetch/Bash — the
+      # digest may only describe what daily-delta collected, which is also
+      # what makes verify-digest's URL-subset gate airtight, and it caps the
+      # spend: there is nothing to research, so no way to burn turns on it.
+      - name: Write the digest (small model)
+        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Same credential rule as weekly.yml: pass ONLY the credential you set
+          # (an unset secret interpolates to "", which can shadow a valid token).
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          show_full_output: true
+          prompt: |
+            Read prompts/write-digest.md and follow it exactly.
+            The digest date is ${{ steps.cfg.outputs.date }}.
+            The delta file is data/daily/${{ steps.cfg.outputs.date }}.json.
+            Write data/daily/${{ steps.cfg.outputs.date }}.md and nothing else.
+
+            THIS IS A NON-INTERACTIVE RUN. Do not research anything; the delta
+            file is your entire universe. Do NOT end your turn until the output
+            file exists on disk — Read it back to verify before you finish.
+          claude_args: |
+            --model ${{ steps.cfg.outputs.model }}
+            --max-turns 30
+            --allowedTools "Read,Write,Edit,Glob,Grep"
+
+      - name: The digest must exist
+        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        run: |
+          F="data/daily/${{ steps.cfg.outputs.date }}.md"
+          if [ ! -s "$F" ]; then
+            echo "::error::$F was not written — the model step produced nothing. Re-dispatch this workflow with the same date to retry."
+            exit 1
+          fi
+
+      - name: Gate — digest may only report the delta
+        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        run: node bin/verify-digest.mjs "data/daily/${{ steps.cfg.outputs.date }}.md" "data/daily/${{ steps.cfg.outputs.date }}.json"
+
+      - name: Gate — privacy scan
+        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        run: node bin/privacy-scan.mjs "data/daily/${{ steps.cfg.outputs.date }}.md"
+
+      - name: Send to the publisher
+        if: steps.cfg.outputs.enabled == 'true' && (steps.delta.outputs.quiet != 'true' || steps.cfg.outputs.quietsend == 'true' || github.event.inputs.force_send == 'true')
+        env:
+          AGENTMAIL_API_KEY: ${{ secrets.AGENTMAIL_API_KEY }}
+        run: node bin/send-digest.mjs "data/daily/${{ steps.cfg.outputs.date }}.md"
+
+      - name: Upload artifacts
+        if: always() && steps.cfg.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-${{ steps.cfg.outputs.date }}
+          path: data/daily/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # State must be committed even on quiet days — the seen-item baseline IS
+      # the product's memory. Same guarded-add + rebase-retry as weekly.yml.
+      - name: Commit state and digest
+        if: steps.cfg.outputs.enabled == 'true'
+        run: |
+          git config user.name  "newsletter bot"
+          git config user.email "actions@users.noreply.github.com"
+          [ -e data/daily ] && git add data/daily
+          if git diff --cached --quiet; then
+            echo "nothing changed — not committing"
+            exit 0
+          fi
+          git commit -m "daily: digest state for ${{ steps.cfg.outputs.date }}"
+          for i in 1 2 3; do
+            git fetch origin main && git rebase origin/main && git push origin HEAD:main && exit 0
+            echo "push attempt $i failed — retrying"
+            sleep 5
+          done
+          echo "::error::could not push after 3 attempts — digest state is in the run artifact."
+          exit 1

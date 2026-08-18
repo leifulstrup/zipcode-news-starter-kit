@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.5.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.6.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -138,6 +138,43 @@ hard way.
 
 **Silence means the system is working.**
 
+## Daily email digest (optional)
+
+Want something every day without paying for a full AI research run every day? The
+optional digest emails **you** (and only you — it's send-to-self by
+construction, not a mailing list) a short note of what's *genuinely new* since
+yesterday: fresh headlines from your approved feeds, changed numbers from your
+data sources. Novelty detection is a plain script, so a quiet day — most days,
+in most ZIPs — runs **no AI at all and sends nothing**; an active day runs one
+small-model summarization with a hard turn cap. The public weekly issue is
+unchanged. To enable, paste:
+
+> Read `.claude/skills/enable-daily/SKILL.md` and follow it.
+
+Design, cost table, and honest limits: `docs/DAILY-DIGEST.md`.
+
+## Getting kit updates into your copy
+
+The kit keeps improving — new skills (like the daily digest above), hardened
+gates, field-test fixes — and each improvement ships as a version on the
+[Releases page](https://github.com/leifulstrup/zipcode-news-starter-kit/releases).
+**Your copy does not update itself**: a repo created from a GitHub template has
+no git connection back to the template, so upstream improvements never arrive on
+their own.
+
+To check for and pull updates, paste this to Claude in your repo folder:
+
+> Read `.claude/skills/update-kit/SKILL.md` and follow it.
+
+It connects your repo to the template (one time), tells you what versions you're
+behind and what each one adds — *before* changing anything — then merges the
+update while protecting everything that's yours: your config, your source
+registry and logs, your published issues, your schedules. It finishes by running
+the kit's health checks and telling you what new capability to try first.
+
+Safe to run any time; if you're current, it says so and stops. Compare your
+`package.json` version against the Releases page whenever you're curious.
+
 ## Repo map
 
 | Path | What it is |
@@ -209,6 +246,13 @@ follow it."* That is the same skill, invoked the way that works everywhere.
 The writing run is the real cost: covered by a Claude Pro/Max subscription token, or
 a few dollars of API usage per issue depending on model and research depth.
 
+**Can I publish daily?** Two answers. For a *private* daily radar — an email to
+yourself with only what changed since yesterday — enable the digest
+(`docs/DAILY-DIGEST.md`): quiet days cost nothing because no AI runs. For a
+*public* daily issue, the pipeline supports any cron, but every issue is a
+full-cost research run and low-news ZIPs mostly restate themselves — run the
+digest first and let it teach you whether your ZIP produces daily news.
+
 **Can I use a different model?** Yes. Only one pipeline step is model-driven, and
 the gates judge its output no matter who wrote it. The weekly workflow ships five
 paths — Claude (the default and the one the brief was tuned on), Gemini, OpenAI's
@@ -218,6 +262,12 @@ brief, any writer: see `docs/MODEL-PROVIDERS.md` for setup and honest caveats.
 **How do I stop it?** Disable the workflows in your repo's Actions tab (or delete
 the repo). The site stays up until you remove the Cloudflare project. To skip a
 single week, add the date to `data/skipped-weeks.txt`.
+
+**How do I get new kit features after I've created my copy?** Template copies
+don't update themselves. Paste to Claude: *"read
+`.claude/skills/update-kit/SKILL.md` and follow it"* — it shows what you're
+missing, then merges the update without touching your config, sources, or
+issues. See "Getting kit updates into your copy" above.
 
 **What if my ZIP has almost no data?** The kit degrades honestly: fewer sections, a
 shorter issue that says what isn't published for your area — never padding.

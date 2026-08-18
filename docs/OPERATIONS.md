@@ -32,7 +32,7 @@ Three consequences of the two-system split, all load-bearing:
    step, and the commit is the deploy trigger — so a bad week is a red X and last
    week's issue still live. Silence is safer than a fabricated brief.
 
-## The four workflows
+## The workflows
 
 | Workflow | Schedule | Question it answers | Blind to | On failure |
 |---|---|---|---|---|
@@ -40,6 +40,17 @@ Three consequences of the two-system split, all load-bearing:
 | `smoke.yml` | After publish + daily | Is the site serving, with its disclosures intact? | Whether it's *this* week's issue | `site-down` issue |
 | `publication-check.yml` | The morning after + a backstop day | Does the week that should exist, exist? | Whether the content is good | `not-published` issue |
 | `sources.yml` | Weekly probe + monthly retrospective | Are the sources alive, and did printed figures stay true? | Everything downstream | `source-down` issue; commits probe/retrospective data |
+| `daily.yml` (opt-in) | `daily.hourUtc` | Did anything genuinely change since yesterday? | Publication quality (it's a private radar) | Red X only — see below; no watchdog issue |
+
+**Daily digest failure modes** (only if you enabled it via `/enable-daily`): a
+day with no email is either a **quiet day** (normal — the model never even ran)
+or a **dead run**, and only the Actions tab distinguishes them: quiet days show
+a green run with a "quiet day" notice; a **red X on `daily.yml` means the run
+died**, not that the day was quiet. Recovery: re-dispatch with the date —
+`gh workflow run daily.yml -f date=YYYY-MM-DD -f force_send=true`. The
+publication-check watchdog does not cover the digest. If digests start
+repeating old items, the state baseline was lost — check that `data/daily/`
+commits are landing on `main`.
 
 Each watchdog opens at most **one** issue per label at a time, and each is designed
 not to share the failure mode of the thing it watches (the publication check's core

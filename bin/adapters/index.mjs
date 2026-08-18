@@ -21,6 +21,10 @@
 //   {
 //     name: 'crime',          // becomes the block name in data/facts/<week>.json
 //     critical: true,         // if ALL critical adapters fail, the weekly run fails
+//     daily: false,           // OPTIONAL: true = the daily digest re-fetches this and
+//                             // reports changed values (see docs/DAILY-DIGEST.md).
+//                             // Most weekly series don't move daily — leave it off
+//                             // unless the source genuinely updates day to day.
 //     async fetch(ctx) {},    // returns the block object; nulls where retrieval failed
 //     async probe() {},       // OPTIONAL: returns [{ name, critical, run }] liveness checks
 //     async retrospective(ctx) {},  // OPTIONAL: re-query printed windows, return drift rows
