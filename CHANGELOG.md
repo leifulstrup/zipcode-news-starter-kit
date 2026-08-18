@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.12.1] — 2026-08-18
+
+A field instance diffed `fixtures/house-style.css` against the reference
+publication's live stylesheet and asked which of three things the differences
+were. The answer was a fourth, and it explains the pattern: **the kit's
+stylesheet was written independently from a prose description of the reference
+design, never transcribed from it** — while `build.mjs` WAS ported from the
+reference implementation. Two halves of one design with different ancestry, and
+nothing rendered a page to notice they disagreed.
+
+### Fixed
+- **The front-page summary panels never stacked on a phone.** `build.mjs`'s
+  injected mobile block collapses them with `grid-template-columns: 1fr` — a
+  property a **flex** container ignores entirely — while the stylesheet used
+  `display: flex`. On every phone, in every kit-built issue, the two panels sat
+  squeezed side by side. `.fp-cols` is now `grid`, with a comment stating that
+  the layout mode is a contract with `build.mjs` and must change on both sides
+  together.
+- **An issue was not responsive as a standalone artifact.** The responsive rules
+  lived only in the chrome `build.mjs` injects, so an issue opened straight from
+  `issues/` — which the kit's architecture explicitly supports — had none. The
+  stylesheet now carries its own `@media` block for its own components.
+- Missing design tokens (`--ink-soft`, `--ink-faint`, `--card`, `--accent-soft`,
+  `--rule-strong`); front-page items had no separator rule; `.fp-p` was serif
+  body copy, so the summary read as more article rather than as a summary column
+  — it is now smaller sans in a receded ink, which is the single biggest visual
+  difference the diff turned up.
+- **The brief demanded something the reference publication does not achieve.**
+  "The front summary must fit exactly one page" — the reference's own PDF runs
+  five items and two panels onto a second page. As written, a diligent instance
+  would keep cutting good material to meet a rule its source of truth violates.
+  Now: open the issue and run no more than about two printed pages.
+
+### Added
+- **render-check asserts mobile**, at a 390px viewport: the summary panels must
+  stack, and nothing may overflow horizontally. Verified by reintroducing the
+  flex version. Mobile is not a smaller desktop — it is where most readers are,
+  and it is where a layout-mode mismatch hides.
+- The brief now states that **a CSS layout mode is a markup contract**, with the
+  `.aibar` as the worked example: it is a flex row expecting exactly two
+  children, and bare text with several `<b>` elements makes flex promote each to
+  its own column, rendering the disclosure bar as ragged columns of a broken
+  sentence.
+- `fixtures/good-issue.html` gained the two front-page panels the brief
+  requires — again, the fixture must exercise what the brief mandates, or the
+  gates test a shape nobody ships.
+
 ## [0.12.0] — 2026-08-18
 
 ### Added

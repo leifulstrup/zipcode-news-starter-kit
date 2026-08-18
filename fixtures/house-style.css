@@ -24,7 +24,12 @@
   --paper:  #fbfaf7;   /* site.config.json colors.paper  */
   --ink:    #1a1a1a;   /* site.config.json colors.ink    */
   --rule:   #c9c4b8;
+  --rule-strong: #a8a292;
   --muted:  #5a5649;
+  --ink-soft:  #3c382e;   /* body-adjacent text that should recede slightly */
+  --ink-faint: #6b665a;   /* captions, source lines, small print */
+  --card:      #ffffff;   /* panel background against --paper */
+  --accent-soft: #f3ece9; /* accent tint for fills, never for text */
 }
 
 /* ---------- base ---------- */
@@ -66,6 +71,11 @@ h1.title .exp {           /* the "(Experimental)" tag — part of the name */
 }
 
 /* ---------- AI disclosure bar (amber, always directly under the masthead) --- */
+/* MARKUP CONTRACT: this is a flex row and it expects exactly TWO children —
+   the badge span, then ONE span holding all the text. Bare text with several
+   <b> elements makes flex promote each <b> to its own column, and the
+   disclosure bar renders as ragged columns of a broken sentence. A layout mode
+   is a markup contract; if you change one, change the other. */
 .aibar {
   background: #fdf6e3; border: 1px solid #e6d9a8; border-left: 4px solid #c9a227;
   padding: 12px 14px; margin: 0 0 26px; font-size: 14.5px; line-height: 1.55;
@@ -84,7 +94,9 @@ h1.title .exp {           /* the "(Experimental)" tag — part of the name */
   text-align: center; margin: 0 0 4px;
 }
 .fp-rule { border: 0; border-top: 2px solid var(--ink); margin: 0 0 18px; }
-.fp-item { display: flex; gap: 14px; margin: 0 0 18px; }
+.fp-item { display: flex; gap: 14px; margin: 0 0 18px; padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule); }
+.fp-item:last-of-type { border-bottom: 0; }
 .fp-rank {
   flex: 0 0 30px; height: 30px; border-radius: 50%;
   background: var(--accent); color: #fff; font-weight: 700;
@@ -102,7 +114,13 @@ h1.title .exp {           /* the "(Experimental)" tag — part of the name */
 .fp-item > .fp-rank { flex: 0 0 30px; }
 
 p.fp-h { margin: 0 0 4px; font-size: 17.5px; }        /* the headline paragraph; bold text inside */
-.fp-p { margin: 0 0 6px; font-size: 16px; line-height: 1.6; }
+/* The front page is a SUMMARY column, not more body copy: sans, smaller, and
+   slightly receded so the headlines carry the page. */
+.fp-p {
+  margin: 0 0 6px;
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 14.5px; line-height: 1.55; color: var(--ink-soft);
+}
 /* "Why it matters:" — the brief names this clause explicitly and forbids
    replacing it with a callout box, so it must be visually distinct inline. */
 .lbl { font-weight: 700; color: var(--accent); }
@@ -114,8 +132,13 @@ p.fp-h { margin: 0 0 4px; font-size: 17.5px; }        /* the headline paragraph;
   color: var(--muted); margin: 0;
 }
 .fp-item p { margin: 0 0 6px; }
-.fp-cols { display: flex; gap: 22px; margin-top: 26px; }
-.fp-cols > * { flex: 1; }
+/* GRID, not flex — this is a contract with build.mjs, not a preference.
+   The injected mobile block collapses these panels with
+   `.fp-cols { grid-template-columns: 1fr }` at <=700px; a flex container
+   IGNORES that property, so the two summary boxes never stacked on a phone
+   and sat squeezed side by side instead. Any layout-mode change here must be
+   matched in build.mjs's mobile block, and vice versa. */
+.fp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 26px; }
 .fp-box {
   border: 1px solid var(--rule); background: #fff; padding: 14px 16px 10px;
 }
@@ -188,3 +211,22 @@ ol.srclist li { margin-bottom: 5px; }
   font-size: 12px; letter-spacing: .18em; text-transform: uppercase; margin: 18px 0 6px;
 }
 .briefs { font-size: 15px; }   /* short-items lists in Around the Neighborhood */
+
+/* ---------- responsive: the issue must work as a STANDALONE artifact -------
+ * build.mjs injects its own mobile block for the site chrome and typography,
+ * and that block also collapses these panels — but only in a BUILT page. An
+ * issue file is designed to be usable on its own (opened from issues/, mailed
+ * around, archived), so its own components carry their own responsive rules
+ * rather than depending on chrome that may not be there.
+ *
+ * Keep this in sync with build.mjs's mobile block: they must not disagree about
+ * layout mode. A grid collapsed by `grid-template-columns: 1fr` is ignored
+ * entirely by a flex container — which is exactly how the summary panels came
+ * to sit squeezed side by side on every phone. */
+@media (max-width: 700px) {
+  .fp-cols { grid-template-columns: 1fr; gap: 12px; }
+  .fp-item { gap: 10px; }
+  .stats { gap: 8px; }
+  .cal-row { flex-direction: column; gap: 2px; }
+  .cal-date { flex: none; }
+}

@@ -478,6 +478,14 @@ build keys off it. Each item inside is exactly this shape, no exceptions:
 </div>
 ```
 
+**A CSS layout mode is a markup contract.** Where `fixtures/house-style.css`
+uses `display: flex` or `grid`, the markup shape is fixed and the stylesheet
+says so in a comment — read it before improvising. The `.aibar`, for instance,
+is a flex row expecting exactly two children (the badge span, then ONE span
+holding all the text); bare text with several `<b>` elements makes flex promote
+each one to its own column and the disclosure bar renders as ragged columns of a
+broken sentence.
+
 There is **no muted or de-emphasized variant**. The ranking is the number; the
 styling never varies. `bin/verify-issue.mjs` fails the run on a rank badge with a
 modifier class or an unbolded `fp-h`.
@@ -497,8 +505,7 @@ the About/Method section, and a standing-sources footer grouped by beat.
 
 Volume is `site.config.json` → `volume`; the issue number is one more than the count
 of previous files in `issues/`. The PDF is rendered later from this same file, and
-its front summary must fit exactly one page — so keep the front page to 4–5 items and
-resist letting item text sprawl.
+its front summary should open the issue and run no more than about two printed pages.
 
 ---
 

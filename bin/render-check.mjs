@@ -81,6 +81,24 @@ const measured = await page.evaluate(() => {
     },
   };
 });
+// Mobile is not a smaller desktop — it is where most readers are, and it is
+// where a layout-mode mismatch hides. The injected mobile block collapses the
+// front-page panels with `grid-template-columns: 1fr`, which a FLEX container
+// silently ignores: the panels stayed side by side on every phone, in every
+// issue, and no gate could see it because nothing rendered at phone width.
+await page.setViewportSize({ width: 390, height: 844 });
+const mobile = await page.evaluate(() => {
+  const cols = document.querySelector('.fp-cols');
+  if (!cols) return null;
+  const kids = [...cols.children].map(el => Math.round(el.getBoundingClientRect().top));
+  return {
+    display: getComputedStyle(cols).display,
+    childTops: kids,
+    stacked: kids.length < 2 || new Set(kids).size === kids.length,
+    docWidth: document.documentElement.scrollWidth,
+    viewport: 390,
+  };
+});
 await browser.close();
 
 const fails = [];
@@ -125,6 +143,29 @@ const distinct = (name, m) => {
 };
 distinct('lbl', measured.lbl);
 distinct('fp-where', measured.where);
+
+// 3. Mobile: the summary panels must stack, and nothing may overflow sideways.
+if (!mobile) {
+  notes.push('.fp-cols not present in this fixture — mobile stacking skipped');
+} else {
+  if (!mobile.stacked) {
+    fails.push(
+      `.fp-cols children do not stack at 390px (display: ${mobile.display}, all at the same ` +
+      `vertical offset). The injected mobile block collapses them with ` +
+      `"grid-template-columns: 1fr", which a FLEX container ignores — use ` +
+      `display: grid in fixtures/house-style.css, or change both together. ` +
+      `Most readers are on a phone.`);
+  } else {
+    notes.push(`.fp-cols stacks at 390px (display: ${mobile.display})`);
+  }
+  if (mobile.docWidth > mobile.viewport + 2) {
+    fails.push(
+      `the page is ${mobile.docWidth}px wide in a 390px viewport — something overflows and the ` +
+      `reader gets a horizontal scrollbar. Find the element wider than its container.`);
+  } else {
+    notes.push(`no horizontal overflow at 390px`);
+  }
+}
 
 console.log(`render-check — ${target.replace(ROOT + '/', '')}`);
 for (const n of notes) console.log(`  ok   ${n}`);
