@@ -103,6 +103,10 @@ Rules:
   /find-sources fills it in; the verify gate warns while it is empty.
 - `sections` is the standing section list. A quiet week is a short section that says
   so — never a removed section. verify-issue warns on any standing section missing.
+- `stateCode` (2-letter), `countyFips` (5-digit), `placeFips` (7-digit or `""`) are
+  OPTIONAL jurisdiction handles for the shared source registry (§11). /setup resolves
+  them once for the ZIP. They are never required: instances predating them keep
+  working, and `bin/registry.mjs` explains what is missing rather than failing.
 - Derived, never stored: issue number = 1 + count of prior files in `issues/`.
 
 ## 3. `config/sources.json`
@@ -300,3 +304,102 @@ for the design. The contract points:
 - Pipeline order (daily.yml): delta → quiet? stop → small-model digest (no
   WebSearch/WebFetch/Bash, --max-turns 30) → verify-digest GATE → privacy-scan
   GATE → send → commit data/daily (state included — it is the memory).
+
+## 11. Shared source registry (optional, read-mostly)
+
+A public, community-vetted registry of local data sources, so instance N+1 does
+not rediscover what instances 1..N already vetted. Lives in a SEPARATE public
+repo, one CSV per state, fetched raw:
+
+```
+https://raw.githubusercontent.com/leifulstrup/zipcode-news-source-registry/main/data/<STATE>.csv
+```
+
+Client: `bin/registry.mjs` (`lookup` | `search <term>` | `export`). Reader:
+`bin/lib/csv.mjs` (RFC 4180). Override the base with `REGISTRY_BASE_URL`
+(file:// accepted — testability, and internal mirrors).
+
+**Columns, in this exact order (schema v2, 25 columns).** The order is contract:
+registry files are diffed in pull requests, and a reordered column makes every
+row look changed.
+
+**Required for a valid row** — `source_id`, `scope_type`, `state`,
+`jurisdiction`, `category`, `name`, `url`, `source_class`, `status`,
+`last_verified`, `kit_version`. Everything else MAY be blank. A contributor
+fills in what they actually verified; **blank means unknown, never a default**,
+because a guessed cadence looks like evidence.
+
+| Column | Req | Meaning |
+|---|---|---|
+| `source_id` | ● | stable kebab slug, e.g. `ca-06037-sheriff-incidents` |
+| `scope_type` | ● | `state` \| `county` \| `place` \| `region` |
+| `state` | ● | 2-letter code |
+| `county_fips` | | 5-digit, blank for state scope |
+| `place_fips` | | 7-digit or blank |
+| `jurisdiction` | ● | human name ("Los Angeles County, CA") |
+| `category` | ● | crime, calls-for-service, 311, permits, zoning, assessor, deeds, courts, inspections, schools, transit, parks, elections, parcels, news, civic, other |
+| `name` | ● | human name of the source |
+| `url` | ● | the dataset or page itself, not just the host |
+| `platform` | | the PRODUCT behind it: `socrata` \| `arcgis-hub` \| `arcgis-server` \| `ckan` \| `accela` \| `tyler-eagle` \| `tyler-data` \| `granicus` \| `legistar` \| `civicplus` \| `civicclerk` \| `opengov` \| `seeclickfix` \| `qscend` \| `salesforce` \| `laserfiche` \| `custom` \| `unknown` |
+| `api_type` | | the ACCESS SHAPE: socrata \| arcgis \| ckan \| rss \| html \| pdf \| manual |
+| `geo_filter` | | field name (`zip_code`) or technique (`point-in-polygon`, `district-crosswalk`, `city-name`, `none`) |
+| `source_class` | ● | primary \| interestedPrimary \| secondary — maps straight to `config/sources.json` |
+| `status` | ● | live \| degraded \| manual-only \| dead |
+| `update_cadence` | | realtime \| hourly \| daily \| weekly \| biweekly \| monthly \| quarterly \| annual \| irregular \| unknown |
+| `lag_days` | | integer: typical days between event and publication |
+| `data_maturity` | | preliminary \| final \| revised \| mixed \| unknown |
+| `history_start` | | `YYYY` or `YYYY-MM-DD`, earliest available record |
+| `retention` | | what it KEEPS live: `full` \| `N-years` \| `N-months` \| `N-weeks` \| `current-only` |
+| `quality` | | excellent \| good \| fair \| poor \| unusable — the verifier's assessment |
+| `last_verified` | ● | YYYY-MM-DD |
+| `kit_version` | ● | version that verified it — **never a person** |
+| `traps` | | semicolon-separated; things that break CODE |
+| `insights` | | prose; things that change WRITING |
+| `notes` | | what it is good for |
+
+Three columns need their rationale stated, because they are what make the
+registry worth more than a bookmark list:
+
+- **`platform` is not `api_type`.** `api_type` is how you reach it; `platform`
+  is the product behind it. Vendor behaviour transfers where a URL cannot — an
+  Accela permit portal behaves like every other Accela permit portal, so the
+  platform predicts the API shape, the pagination and half the traps *before the
+  first fetch*, including in a county nobody has registered yet.
+- **`traps` vs `insights` are separate on purpose, for separate readers.** A
+  TRAP breaks your code or silently returns wrong rows — padded fields, a lying
+  `updatedAt`, an equality filter returning zero rows with HTTP 200. That is an
+  adapter author's concern. An INSIGHT changes how you should *write about* the
+  number — what it actually measures versus what it appears to measure, its
+  denominator, its biases ("assessment value is not market value"). That is an
+  editor's concern. Merged, the editorial warning would be buried in a list of
+  parsing gotchas.
+- **`lag_days` / `data_maturity` / `retention` are the registry-level twin of
+  the lag-zero contract** in `bin/adapters/README.md` §9. A lagging source
+  cannot answer "this week"; preliminary figures get reclassified after you
+  publish them; a source retaining four weeks means the publication must archive
+  every run or lose the history permanently.
+
+CSV rules: RFC 4180 quoting, header row required, rows sorted by
+(`county_fips`, `place_fips`, `category`, `source_id`) for clean diffs, LF
+endings, no BOM.
+
+Rules that matter more than the schema:
+
+- **Leads, not authority.** An entry is exactly as authoritative as a promising
+  search result. It is still live-tested, its jurisdiction still confirmed, and
+  it still requires the publisher's explicit approval before entering
+  `config/sources.json`. A registry publishers trusted blindly would propagate
+  one instance's mistake to every instance — strictly worse than each searching
+  alone.
+- **Never a dependency.** 404, dead network, missing config: warn, fall back to
+  cache if present, exit 0, carry on with the normal sweep. Nothing here is on
+  the publishing path.
+- **Entries older than 180 days are marked STALE** and must be re-verified
+  before use; refresh `last_verified` when contributing the re-check.
+- **No contributor identity, ever.** `kit_version` records what verified a row,
+  not who. The registry holds public facts about public data sources — never a
+  publisher's name, address, email, or coordinates.
+- **Contribution is a pull request the publisher reads first.** `export` emits
+  rows for review; nothing is submitted automatically.
+- Cache: `data/registry-cache/<STATE>.csv` + `.fetched` sidecar, re-fetched
+  after 24h, gitignored.

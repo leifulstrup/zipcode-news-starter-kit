@@ -174,7 +174,38 @@ it is. Three rules, all field-tested:
 Standing rule: **never trust a place name or a bounding box where a boundary
 test is available.**
 
-## 11. The optional hooks
+## 11. Declare what you learned, so it can be shared
+
+An adapter knows things about its source that took real effort to establish —
+the platform, the lag, whether figures are preliminary. Declare them on the
+adapter object and `bin/registry.mjs export` can carry them into the shared
+registry, where the next publisher in your county starts from them instead of
+rediscovering them:
+
+```js
+export const adapter = {
+  name: 'permits', critical: true,
+  // Optional metadata — all of it discovered during normal verification, so
+  // recording it costs nothing extra and is expensive to reconstruct later.
+  host: 'data.example.gov',       // matches config/sources.json classification
+  platform: 'socrata',            // the PRODUCT: socrata|arcgis-hub|accela|tyler-*|…
+  apiType: 'socrata',             // the ACCESS SHAPE
+  category: 'permits',
+  geoFilter: 'zip_code',          // or point-in-polygon | district-crosswalk | …
+  updateCadence: 'daily',
+  lagDays: 7,                     // the §9 lag, in one number
+  dataMaturity: 'final',          // preliminary|final|revised|mixed
+  historyStart: '2013',
+  retention: 'full',              // or '4-weeks' → archive on every run
+  async fetch(ctx) { /* … */ },
+};
+```
+
+Nothing requires this and nothing breaks without it — blank means unknown, never
+a default. See `docs/SHARED-REGISTRY.md` for how the registry uses it and why
+`platform` is the field that transfers across jurisdictions.
+
+## 12. The optional hooks
 
 - `probe()` → returns `[{ name, critical, run: async () => detail }]`. Run weekly
   by `bin/probe-sources.mjs`; a critical failure blocks nothing by itself but

@@ -79,6 +79,44 @@ unit that narrows to a few blocks. Development and commercial cases keep full
 identifiers — those concern buildings and companies, and are where an identifier
 earns its keep.
 
+### 1c. Report the record, in the record's own terms
+
+This publication is written by a machine and reviewed by nobody before it goes
+out, so it holds to the one practice that keeps such a thing defensible:
+**accurate, attributed accounts of official records, in the record's own
+framing, with a link.** The protection in that sentence lives in *accuracy and
+attribution*, not in good intentions. Full guidance: `docs/EDITORIAL-RISK.md`.
+
+What that means concretely, on top of the privacy rules above:
+
+- **An arrest is not a conviction and a charge is not a fact about a person.**
+  Report crime as counts, patterns and geography — never as individuals. Never
+  identify a victim, and never anyone who is a minor.
+- **Businesses are reportable as records, not as verdicts.** Use the record's own
+  metric with its date — the inspection score, the violation count, the case
+  status — and report re-inspections and remediation where the record has them.
+  "Four violations were recorded on August 3" is the record; "the restaurant is
+  filthy" is your characterization. Never rank or aggregate into a judgment
+  ("the worst restaurants in town").
+- **Do not infer beyond the record.** A health violation is not an outbreak; a
+  code case is not a slumlord; a lawsuit filed is not a wrong committed.
+- **Public officials acting in office** are legitimately reportable in that role
+  — which does not extend to their family, health, or home.
+- **Do not write professional advice** — legal, medical, financial, tax,
+  real-estate or safety. The About section disclaims it; do not undercut that by
+  telling readers what they "should" do about a regulated subject.
+- **Skip entirely**: individual disputes (neighbor, landlord–tenant,
+  parent–school), ongoing litigation characterized beyond its filing, anything
+  sourced only to social media or a neighborhood app, and unfolding emergencies —
+  a weekly brief is the wrong instrument and being slow *and* wrong is the worst
+  outcome.
+- **Summarize and link; never reproduce.** Another outlet's sentences,
+  photographs and graphics are theirs. Facts are not.
+
+Where this publication and an official source disagree, the official source
+governs and this publication is wrong — say so, promptly, and fix the pipeline
+rather than the sentence.
+
 ### 1b. You may read QA-QC/. You may never write to it.
 
 `QA-QC/` holds the rubric your work is scored against. **Read it** — it is in this

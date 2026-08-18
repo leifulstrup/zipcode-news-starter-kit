@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.9.0] — 2026-08-18
+
+### Added
+- **A shared, community-vetted source registry.** Working out what a county
+  publishes is the most expensive step in the kit — 30–60 minutes per instance —
+  and it is almost entirely duplicated: LA County has ~250 ZIPs whose publishers
+  would each rediscover the same sheriff feed, the same assessor, and the same
+  traps. The kit now reads
+  [zipcode-news-source-registry](https://github.com/leifulstrup/zipcode-news-source-registry)
+  before searching, via `bin/registry.mjs` (`lookup` / `search` / `export`).
+  Design and rationale: `docs/SHARED-REGISTRY.md`.
+  - **Keyed on jurisdiction, not ZIP** (state/county/place FIPS): sources are
+    jurisdiction-scoped — a sheriff serves dozens of cities — so this is ~100×
+    smaller than a ZIP-keyed table and gives reverse lookup for free. `/setup`
+    resolves and stores `stateCode`/`countyFips`/`placeFips` once.
+  - **25 attributes per source**, because the URL is the least valuable part:
+    `platform` (the product — Socrata, ArcGIS, Accela, Tyler…), `update_cadence`,
+    `lag_days`, `data_maturity`, `history_start`, `retention`, `quality`, plus
+    `traps` (what breaks your code) and `insights` (what changes how you write).
+    `platform` is the field that **transfers across jurisdictions** — an Accela
+    portal behaves the same in any state.
+  - **Leads, not authority**: every entry is still live-tested, still requires
+    the publisher's approval, still logged. A poisoned row is worth no more than
+    a poisoned search result. Data only — patterns are read and adapted, never
+    fetched and executed. No contributor identity, ever.
+  - Degrades completely gracefully: unreachable or absent registry prints one
+    line and the normal sweep proceeds.
+- **`docs/EDITORIAL-RISK.md`** and a new brief section (§1c): report the record
+  in the record's own terms, with a link. Arrests are not convictions; businesses
+  are reportable as records not verdicts (inspection scores with dates and
+  re-inspections, never rankings); no professional advice; skip individual
+  disputes, characterized litigation, social-media-only sourcing and unfolding
+  emergencies; summarize and link, never reproduce. Explicitly not legal advice.
+- Adapters can now declare `platform`, `lagDays`, `dataMaturity`, `retention` and
+  friends (`bin/adapters/README.md` §11) so `registry export` can share what an
+  instance learned.
+
 ## [0.8.0] — 2026-08-18
 
 All three findings from the second field instance's `/setup` run (ZIP 90706),

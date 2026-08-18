@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.8.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.9.0** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
@@ -242,7 +242,7 @@ there is nothing to undo.
 | `issues/` | Your published issues (bare HTML + PDF) — the only editorial artifacts |
 | `data/` | Facts files, source registry, source-log, lessons-learned, accuracy log |
 | `QA-QC/` | The seven-question rubric and issue measurement |
-| `docs/` | Setup guides, operations runbook, evaluation method, the Contract |
+| `docs/` | Setup guides, operations runbook, evaluation method, editorial-risk guidance, the Contract |
 
 Start with `docs/CONTRACT.md` if you want to understand how the pieces agree with
 each other, and `docs/OPERATIONS.md` for how it runs and what to do when it breaks.
@@ -259,6 +259,16 @@ Four non-negotiables, enforced by gates rather than promises:
 3. **Per-section attribution** with visible URLs and query dates.
 4. **Failed fetches are admitted in print.** An issue that hides a failed query is
    rejected — that is the exact shape of a fabricated number.
+
+Sources are shared, not hoarded: the kit reads a public, community-vetted
+**[source registry](https://github.com/leifulstrup/zipcode-news-source-registry)**
+before it starts searching, so you inherit what publishers in your county already
+established — which portal is the wrong jurisdiction, how far each feed lags,
+which field is padded — and contribute back what you verify. It is *leads, not
+authority*: every entry is still live-tested and still needs your approval
+(`docs/SHARED-REGISTRY.md`). And `docs/EDITORIAL-RISK.md` covers what not to
+publish and how to publish the rest safely — the topics where a small
+publication actually gets into trouble.
 
 Also deliberate: **no mailing list** (emailing readers imports consent records,
 CAN-SPAM obligations, and a stored address list onto a site whose privacy surface is

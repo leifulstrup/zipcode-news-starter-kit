@@ -1,3 +1,7 @@
 public/
 node_modules/
 .DS_Store
+
+# Shared-registry cache (CONTRACT §11). Re-fetched on demand; never committed —
+# a stale copy in git would look like curated data and drift silently.
+data/registry-cache/

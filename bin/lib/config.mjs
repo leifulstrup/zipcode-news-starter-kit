@@ -27,6 +27,11 @@ function readJson(rel) {
   }
 }
 
+// NOTE ON OPTIONAL KEYS: `stateCode`, `countyFips` and `placeFips` (the shared
+// registry's jurisdiction handles, CONTRACT §11) are deliberately NOT required.
+// Instances configured before v0.9 do not have them, and a publisher who cannot
+// determine a FIPS code must still be able to publish — the registry is a bonus,
+// never a dependency. bin/registry.mjs explains what is missing when they are absent.
 export function loadConfig() {
   const cfg = readJson('site.config.json');
   for (const key of ['zip', 'siteName', 'timezone', 'workerName', 'cronUtc', 'sections', 'colors']) {

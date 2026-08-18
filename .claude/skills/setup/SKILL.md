@@ -148,20 +148,44 @@ config.
    checks pass. So generate a throwaway probe from the values they just gave,
    run the gate on it, show them the hits, and delete it:
 
+   **The probe ALWAYS runs.** Empty config arrays are normal — a publisher may
+   legitimately have no street markers to block — and an empty array simply
+   omits that hazard from the probe file. It never skips the probe. Do not
+   early-return because a category is empty; that silently reproduces the exact
+   gap this step exists to close.
+
+   Build `/tmp/privacy-probe.html` from two groups:
+
+   **Always included, regardless of config** (these test the gate's generic
+   rules, which apply to every instance):
+   - a full decimal lat/lon pair inside their area
+   - second-person phrasing: "your street", "your house", "your block"
+   - an email address at a personal provider (e.g. `someone@gmail.com`)
+
+   **Added per non-empty config array**:
+   - each `publisherNames` entry
+   - each `streetMarkers` entry, written with a house number in front
+   - each `coordinatePrefixes` entry, as a bare latitude and a bare longitude
+   - a parcel number in their county's format, if one was configured
+
    ```
-   # write /tmp/privacy-probe.html containing, on separate lines:
-   #   a full decimal lat/lon pair inside their area
-   #   a bare latitude and a bare longitude at their configured prefixes
-   #   "your street" phrasing
-   #   each publisherName, each streetMarker with a house number
-   #   a parcel number in their county's format (if configured)
-   node bin/privacy-scan.mjs /tmp/privacy-probe.html    # expect exit 1 and one hit per hazard
+   node bin/privacy-scan.mjs /tmp/privacy-probe.html    # expect exit 1
    rm /tmp/privacy-probe.html
    ```
 
-   If any hazard is NOT caught, the config is wrong — fix it and re-run. Thirty
-   seconds, and it converts "I filled in a form" into "I watched it catch me."
-   Never leave the probe file behind.
+   **Expected result: exit 1, with at least one hit for every hazard you
+   included.** Walk the output against your list. If a hazard produced no hit,
+   name it to the user and fix that specific config entry before moving on — a
+   missing hit is a misconfiguration, not a curiosity.
+
+   **If every config array is empty** (a publisher who declined the whole
+   privacy section), still run the probe with the built-in hazards, and tell
+   them plainly: only the generic rules are protecting them, their own name,
+   street and coordinates are *not* blocked, and they can add them any time by
+   re-running this skill or editing `config/privacy.json`.
+
+   Thirty seconds, and it converts "I filled in a form" into "I watched it catch
+   me." Never leave the probe file behind.
 
 ## 3. Write the configuration
 
@@ -172,6 +196,20 @@ With approvals in hand:
    (`zipcode-news-<zip>`), leave `experimental: true`, `volume: 1`, keep the default
    sections and colors unless the user asked to change them, `geographyNote: ""`
    (filled by /find-sources).
+
+   Also resolve and store the **jurisdiction handles** — `stateCode` (2-letter),
+   `countyFips` (5-digit), `placeFips` (7-digit, or `""` for unincorporated
+   areas). Look them up yourself (the Census geocoder resolves a ZIP or a
+   city/state to county and place FIPS) and confirm the human-readable result
+   with the user — "Bellflower, Los Angeles County, California" — rather than
+   reading digits at them. Explain in one line why they exist: they let the kit
+   reuse sources other publishers in their county have already vetted, via
+   `node bin/registry.mjs lookup`.
+
+   If you cannot determine them confidently, leave them as `""` and say so. They
+   are optional by design — every other part of the kit works without them, and
+   registry lookups can be run with `--state`/`--county` flags instead. Never
+   guess a FIPS code; a wrong county silently returns another county's sources.
 2. Write `config/privacy.json` with the interview's privacy answers, each
    `extraPatterns` entry carrying a `why`.
 3. Update `wrangler.toml` → `name` to the workerName.

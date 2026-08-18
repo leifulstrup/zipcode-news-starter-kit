@@ -5,6 +5,9 @@
   "tagline": "A weekly brief for ZIP code 00000",
   "city": "Anytown",
   "state": "ST",
+  "stateCode": "",
+  "countyFips": "",
+  "placeFips": "",
   "timezone": "America/New_York",
   "domain": "",
   "workerName": "zipcode-news-00000",
@@ -12,7 +15,11 @@
   "publishDay": "Friday",
   "cronUtc": "0 20 * * 5",
   "volume": 1,
-  "colors": { "accent": "#7a2e2e", "paper": "#fbfaf7", "ink": "#1a1a1a" },
+  "colors": {
+    "accent": "#7a2e2e",
+    "paper": "#fbfaf7",
+    "ink": "#1a1a1a"
+  },
   "sections": [
     "The Week in One Page",
     "Local Government",

@@ -42,7 +42,88 @@ Ask, one at a time:
 4. **What do you most want the newsletter to cover?** Their answer weights the
    search below.
 
+## 1b. Check what has already been vetted — before searching for anything
+
+Other publishers have done this work. Start there:
+
+```
+node bin/registry.mjs lookup
+```
+
+This reads the shared, community-vetted source registry for the instance's
+state, county and place (`stateCode` / `countyFips` / `placeFips`, recorded by
+/setup; pass `--state XX --county FIPS` if they are missing). Every publisher in
+a county otherwise rediscovers the same sheriff feed, the same assessor, the
+same courts portal — and, more expensively, rediscovers the same traps.
+
+Present the hits to the user as **candidates**. For each one, read out:
+
+- **what it is** — name, what it covers, its `last_verified` date and `status`;
+- **the platform** (`socrata`, `accela`, `legistar`, `civicclerk`…) — this
+  predicts the API shape and half the traps before you fetch anything, and it
+  transfers across jurisdictions, so recognising the vendor is useful even for
+  a source in another county;
+- **its data character** — `update_cadence`, `lag_days`, `data_maturity`,
+  `retention`. These decide what may honestly be written: a 24-day lag means a
+  "this week" window is empty or partial (see `bin/adapters/README.md` §9),
+  `preliminary` means figures get reclassified after you publish them, and a
+  four-week `retention` means the publication must archive every run or lose
+  the history permanently;
+- **its traps** — what breaks code: padded fields, lying `updatedAt`, filters
+  that return zero rows with HTTP 200;
+- **its insights** — what changes writing: what the number actually measures
+  versus what it appears to measure, its denominator, its biases.
+
+Traps and insights are the real payload. A URL is a search away; "equality
+filters silently return zero rows on this dataset" and "assessment value is not
+market value" each cost somebody an afternoon or a correction.
+
+State this rule out loud, and hold to it:
+
+> **The registry is leads, not authority.** An entry is exactly as
+> authoritative as a promising search result. You will still live-test it (§4),
+> still confirm its jurisdiction (§3), and the publisher still approves or
+> rejects it like any other candidate. A registry trusted blindly would spread
+> one instance's mistake to every instance — worse than everyone searching
+> alone.
+
+Handle staleness and absence explicitly:
+
+- Entries marked **STALE** (over 180 days since verification) are re-verified
+  now, not assumed. If it still works, note the fresh date to contribute back;
+  if it broke, that is a valuable correction the registry needs.
+- Entries with status `degraded`, `manual-only` or `dead` still tell you
+  something — often "don't spend an hour finding out this is browser-only."
+- Nothing registered for the area, or the registry unreachable? Say so in one
+  line and carry on with the sweep below. The kit works completely without it.
+
+Log registry-sourced candidates in `data/source-log.md` like any other, with
+how-found recorded as "shared registry" and the verification you performed.
+
 ## 2. The systematic sweep
+
+The registry covers what previous publishers happened to need. It will not cover
+your ZIP's long tail, and it can be out of date. Sweep for the gaps.
+
+**As you verify each NEW source, capture its character while you are looking at
+it.** You are about to observe most of it anyway during the live test in §4, and
+every one of these is expensive to reconstruct later from memory:
+
+| Record | How you observe it during testing |
+|---|---|
+| `platform` | the vendor behind the page — Socrata, ArcGIS, Accela, Legistar, CivicClerk, Granicus; usually visible in the URL, the page chrome, or the API shape |
+| `update_cadence` | how often new records appear |
+| `lag_days` | today's date minus the newest record's date |
+| `data_maturity` | preliminary / final / revised — the source usually says, often in a footnote |
+| `history_start` | the oldest record you can query |
+| `retention` | how far back it still serves; a page that shows only recent weeks is `N-weeks`, not `full` |
+| `quality` | your overall assessment, once you have queried it |
+| `traps` | anything that broke or silently misled you |
+| `insights` | what the number actually measures, its denominator, its biases |
+
+Note them in `data/source-log.md` as you go. They feed both the publisher's own
+registry and — if they choose to share — the contribution at the end of this
+skill.
 
 Search at **city, county, AND state level** — many towns publish nothing themselves
 while their county or state publishes a lot about them. For each category below, try
@@ -248,6 +329,28 @@ decided. Commit:
 ```
 git add -A && git commit -m "sources: initial registry for <zip>"
 ```
+
+### Offer to contribute back
+
+The publisher has just paid for research that the next publisher in their county
+would otherwise repeat. Offer to share it:
+
+```
+node bin/registry.mjs export
+```
+
+That prints CSV rows for the hosts they approved, ready to open as a pull
+request against the public registry repo. Three things to tell them plainly:
+
+- **They must read every row first.** The export leaves `category`, `api_type`
+  and `geo_filter` blank and cannot infer `traps` — and traps are the column
+  worth having. Fill them in from what you learned this session; a row without
+  them is barely better than a search result.
+- **It becomes public.** It must contain only facts about public data sources:
+  never their name, address, email, coordinates, or anything from
+  `config/privacy.json`. The registry stores `kit_version`, never a person.
+- **It is never automatic.** Nothing is submitted without them choosing to open
+  the pull request. Declining is completely fine — the kit does not care.
 
 Tell the user: the registry is live, and as they hear of new sources over time — a
 neighbor's tip, a reader email, something you stumble on during weekly research —
