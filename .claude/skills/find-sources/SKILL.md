@@ -46,10 +46,25 @@ Ask, one at a time:
 
 Search at **city, county, AND state level** — many towns publish nothing themselves
 while their county or state publishes a lot about them. For each category below, try
-targeted searches (`"<city>" open data portal`, `"<county> county" GIS`, `<state>
-judiciary case search`, `site:data.<city>.gov`, and the platform-specific patterns —
-Socrata/Tyler Data & Insights (`data.<place>.gov`), ArcGIS Hub / Open Data
-(`<place>.opendata.arcgis.com`, `gis.<place>.gov`), CKAN instances):
+targeted searches — **always with the state in the query** (`"<city>, <state>" open
+data portal`, `"<county> County, <state>" GIS`, `<state> judiciary case search`).
+An unqualified `"<city>" open data` query manufactures the Springfield problem:
+same-named cities in other states will outrank the right one. Qualifying the query
+is necessary but not sufficient — wrong-state results still appear even in qualified
+searches, which is why §3 verification is never skipped. Also try the
+platform-specific patterns — Socrata/Tyler Data & Insights (`data.<place>.gov`),
+ArcGIS Hub / Open Data (`<place>.opendata.arcgis.com`, `gis.<place>.gov`), CKAN
+instances — with two field-tested cautions:
+
+- **A resolving domain is not a live portal.** Some `data.<state>.gov` domains are
+  dead 301 redirects to a vendor homepage. Check where the URL actually lands and
+  whether a catalog with dated datasets exists before treating it as a portal.
+- **ArcGIS endpoints often hide from the obvious patterns.** When
+  `<place>.opendata.arcgis.com` finds nothing, search the ArcGIS Online catalog
+  directly (`arcgis.com/sharing/rest/search` with the place and state as terms) and
+  use the **owning organization** to discriminate — a state GIS office's org account
+  (e.g. an org slug containing the state name) is the tell that separates the right
+  "Lincoln County parcels" layer from the same-named layer in another state.
 
 **The core civic set:**
 - open-data portals (city, county, state)
@@ -79,24 +94,73 @@ newsletters, the transit agency, parks department, and the adjacent jurisdiction
 
 Same-named places are a real hazard: the same city name exists in many states,
 counties and cities share names, neighborhoods and streets repeat across metros.
-**A dataset that merely name-matches the town is not vetted.** Before recommending
-any source:
+**County names collide even worse than city names** — for rural ZIPs the county is
+the search key, and a name like "Lincoln County" or "Greene County" exists in a
+dozen or more states. **A dataset that merely name-matches the town is not vetted.**
+Before recommending any source:
 
 1. Confirm the ZIP's true city and county (cross-check against census/USPS ZIP
-   lookups, not just memory).
+   lookups, not just memory). Ask whether the ZIP contains **more than one
+   municipality** — common in rural areas, where one ZIP spans several towns. Each
+   town in the footprint has its own offices, agendas, and records; note them all.
 2. Confirm the source's publisher is the government (or outlet) of THAT city/county/
    state — right state, right county, and the ZIP actually inside the covered
-   boundary.
+   boundary. For county-named domains, check the **state token in the domain
+   itself** (`greenecountymo.gov` vs `greenecophoh.gov` — that two-letter token may
+   be the only visible tell) *before* spending time reading its catalog.
 3. **Record how you confirmed it** in the source-log entry ("confirmed: portal
    footer names <county>, <state>; test query returned streets in <city>").
+
+Three hard rules learned in field testing:
+
+- **A search engine's AI summary is never jurisdiction evidence.** Synthesized
+  summaries have confidently attributed one state's GIS portal to another state's
+  city of the same name. Only the fetched source itself — its footer, its metadata,
+  its rows, its spatial extent — counts as confirmation.
+- **Unconfirmable jurisdiction is disqualifying, not neutral.** If a source's own
+  pages and metadata never positively state its state and county, reject or park it
+  until out-of-band evidence (a linking .gov site, a spatial bounding box, rows with
+  verifiable local street names) confirms it. "No state mentioned" is not
+  "probably fine."
+- **Beware official-records SEO clones.** Sites mimicking court/records portals
+  (unofficial domains stuffed with the state name and "records" or "case search")
+  often outrank the real portal. The record itself lives on a government domain;
+  anything else is at best `secondary`, at worst a scam — verify the official
+  portal's true domain from the court or agency's own site.
+- Apply jurisdiction checks to **API responses too**, not just web pages — federated
+  catalogs (Socrata especially) can return another city's datasets mixed into a
+  state portal's results.
 
 ## 4. Test live, then explain
 
 For each promising dataset: fetch it. Confirm the ZIP or jurisdiction is actually
-covered (a test query returning plausible rows for this geography), confirm it
-updates (look at the newest record's date), and note the access shape (API endpoint,
-CSV, HTML page). A 200 with zero rows where rows are expected is a failure, not a
-pass.
+covered, confirm it updates (look at the newest record's date), and note the access
+shape (API endpoint, CSV, RSS, HTML page). A 200 with zero rows where rows are
+expected is a failure, not a pass. Field-tested refinements:
+
+- **One plausible row is not coverage — check the volume.** A wrong-jurisdiction
+  dataset can still return a stray plausible-looking row for your area (a
+  city-limits dataset returning one licensed address just outside them). Run a
+  count query and ask: is this volume plausible for the whole town? A dataset that
+  "covers" a village of 13,000 with 3 rows does not cover it. Confirm the
+  jurisdiction of the *dataset*, not just the portal it sits on.
+- **County datasets often need a crosswalk.** County data is frequently keyed by
+  township, parcel ID, or district — not municipality or ZIP. When the dataset has
+  no town/ZIP column, look for the portal's parcel-universe or geography crosswalk
+  dataset and plan a **two-step adapter** (crosswalk → IDs → filter the target
+  dataset by ID). Record the crosswalk as part of the source entry.
+- **Bot-blocked is not dead.** Live, current, useful government sources sometimes
+  return 403 to non-browser clients. Classify these `manual-only` (weekly human or
+  browser-automation lookup) rather than failing them — and say so in the registry
+  so nobody later "discovers" the source is broken.
+- **Ask what the source retains.** Some sources keep only a few weeks of history
+  (a police blotter retaining 4 weeks, for example). If history evaporates, the
+  newsletter must archive every issue's pull — record the retention window and
+  flag `archive-on-run` in the registry entry.
+- **A stale official page usually means a platform migration, not a dead source.**
+  An agenda archive that stops eighteen months ago has probably moved to a new
+  vendor system. Search for the successor before marking the source dead — and log
+  the stale predecessor so nobody re-registers it.
 
 Then present the candidates to the user as a ranked proposal, in plain language:
 what the source is, what it could power ("this is what a weekly 'reported incidents'
@@ -110,7 +174,12 @@ the user approve, reject, or park **each one**.
   reliability, jurisdiction confirmation), the user's verdict and reason.
 - **`data/sources-ranked.md`** — the approved roster, in the tier/score/cadence/
   Insight/Known-failures structure the file documents. Trusted-outlet answers from
-  the interview seed the narrative tiers.
+  the interview seed the narrative tiers. For each entry also record: **access
+  shape** (API / CSV / RSS / scrape / manual-only), **retention window** (and
+  `archive-on-run` if the source deletes its own history), and **how jurisdiction
+  was confirmed**. Institutional names rot — school districts reorganize, agencies
+  merge, vendors change — so registry entries naming an institution should be
+  **re-verified quarterly** (the same 8th-edition review that updates scores).
 - **`config/sources.json`** — classify every approved host: `primary` (the record
   itself), `interestedPrimary` (authoritative for themselves, interested otherwise),
   `secondary` (writes about records), `noVintage` (silently-revising estimate

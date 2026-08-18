@@ -106,6 +106,21 @@ gets cut, not caveated. Prompt instructions do not move quantitative behavior �
 fetchers and gates do; every time a number had to be right, the fix was to fetch
 it, not to ask for it.
 
+**On finding sources.** (from field-testing the kit against a rural, a suburban,
+and a mid-size-city ZIP)
+County names collide across states even worse than city names — verify the state
+token in a county domain before reading its catalog. A search engine's AI summary
+is never jurisdiction evidence; only the fetched source is. A source whose own
+pages cannot positively state its state and county is rejected or parked — absence
+of confirmation is disqualifying, not neutral. One plausible row is not coverage —
+check whether the volume is plausible for the whole place. A resolving
+`data.<state>.gov` domain is not a live portal; check where it lands. Bot-blocked
+(403) is not dead — classify it manual-only instead of failing it. A stale official
+archive usually means a platform migration; find the successor before declaring the
+source dead. Some sources delete their own history — record retention windows and
+archive on every run. Institutions rename and reorganize; re-verify
+institution-named registry entries quarterly.
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it
