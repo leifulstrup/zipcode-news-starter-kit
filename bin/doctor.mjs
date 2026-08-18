@@ -148,6 +148,23 @@ try {
   rows.push({ result: 'FAIL', case: 'styled-fixture headline parity', detail: e.message });
 }
 
+// Appearance, not just presence. Skips itself when Chromium is absent, so this
+// never blocks a publisher without a browser — but on any machine that has one
+// (and in CI, which installs it for the PDF) it catches the class of failure
+// every text-based gate is blind to.
+{
+  const rc = spawnSync(process.execPath, ['bin/render-check.mjs'], { cwd: ROOT, encoding: 'utf8' });
+  const out = (rc.stdout ?? '') + (rc.stderr ?? '');
+  const skipped = /SKIPPED/.test(out);
+  const ok = rc.status === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: skipped ? 'issue renders as designed (skipped: no browser)' : 'issue renders as designed',
+    detail: ok ? '' : out.split('\n').filter(l => l.includes('::error::')).join(' ').slice(0, 300),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Configuration coherence. /setup tells the publisher this run "confirms the
 // configuration is coherent" — a sentence that was false until these existed:

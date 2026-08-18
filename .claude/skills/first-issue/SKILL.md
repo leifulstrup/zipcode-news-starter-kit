@@ -41,6 +41,7 @@ node QA-QC/measure-issue.mjs issues/<WEEK>.html
 node bin/normalize-issue.mjs issues/<WEEK>.html
 node bin/html-to-pdf.mjs issues/<WEEK>.html issues/<WEEK>.pdf "<siteName> — <WEEK>"
 node build.mjs
+node bin/render-check.mjs issues/<WEEK>.html
 node bin/doctor.mjs
 ```
 

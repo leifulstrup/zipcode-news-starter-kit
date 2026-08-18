@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.11.0] — 2026-08-18
+
+### Fixed
+- **CRITICAL, visual: the front-page rank badge rendered as a 373px maroon
+  lozenge on every item of every issue.** A specificity inversion inside the
+  shipped stylesheet: `.fp-item > div { flex: 1 }` (0,1,1) out-specifies
+  `.fp-rank` (0,1,0), and the brief's own mandatory template makes *both* the
+  badge and the body `> div` children — so the 30px circle computed to
+  `flex-grow:1`. It passed privacy-scan, verify-issue, measure-issue, normalize,
+  the PDF render, build, and doctor 13/13. **Presence is not appearance**, and
+  nothing in the kit closed that gap.
+- **Four of the seven classes the brief's mandatory front-page template requires
+  were never styled at all.** `.fp-where` computed to full body size — the
+  per-item source line read as part of the story — and `.lbl` computed to plain
+  body text, so **"Why it matters:", the one inline clause the brief names
+  explicitly and forbids replacing with a callout box, rendered invisibly.**
+- **`/go-live` step 1.3 assumed the ZIP path while the README recommends the
+  template path.** On the template path the repo already exists, so
+  `gh repo create --source . --push` creates a *second* repo, re-points origin,
+  pushes there, and orphans the original along with its workflow registrations —
+  leaving two repos, one live and one the user believes is live. Now branches on
+  `git remote get-url origin`, and states that the repo name and `workerName` are
+  independent.
+- **Every workflow is registered and ACTIVE the moment a repo is created from the
+  template — before `/setup` has ever run.** `daily.yml` guarded this; `weekly.yml`
+  did not, so a copy created Monday and abandoned mid-interview fires Friday's
+  cron with placeholder ZIP 00000, fails, and emails its owner a red X for a
+  publication that does not exist — breaking "silence means the system is
+  working" before they finish the interview. `weekly.yml` now exits green with a
+  helpful notice while the ZIP is still `00000`.
+
+### Added
+- **`bin/render-check.mjs`** — the durable answer to presence-is-not-appearance.
+  Loads the styled fixture in the browser the kit already uses for PDFs and
+  asserts what a reader sees: the rank badge is square-and-round, and elements
+  the brief requires to stand out (`.lbl`, `.fp-where`) actually differ from the
+  text *they sit in* — not from `document.body`, which a 16px label inside a
+  16px paragraph would trivially "differ" from. Skips itself with instructions
+  when no browser is installed; wired into doctor, `/first-issue`, and
+  `npm run render-check`. Verified by reintroducing both real defects.
+- `fixtures/good-issue.html` now uses the brief's **full mandatory template**
+  (`.fp-body`, `.fp-p`, `.lbl`, `.fp-where`) — the fixture must exercise what the
+  brief requires, or the gates test a shape nobody ships.
+- Brief §4b: **when an item turns on a scheduled decision, carry the meeting's
+  TIME and any statutory deadline on the same page.** A field instance printed a
+  vote's date but not that it was a *special* meeting at 9:00 a.m. rather than
+  the regular 7:00 p.m. slot (a reader acting on it arrives twelve hours late),
+  and missed a statutory deadline two days later that decided the matter.
+  Neither was a wrong claim; both sat further down a notice already cited.
+  **Stopping when the story is good enough is how the useful part gets left out.**
+
 ## [0.10.1] — 2026-08-18
 
 Second field instance, `/first-issue` complete: gate-clean issue, 12-page PDF,

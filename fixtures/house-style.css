@@ -93,7 +93,26 @@ h1.title .exp {           /* the "(Experimental)" tag — part of the name */
   margin-top: 3px;
 }
 .fp-item > div { flex: 1; }
+/* Must follow, and must out-specify, `.fp-item > div` above: BOTH the rank badge
+   and the body are `> div` children of .fp-item (that is the brief's mandatory
+   template), so the bare-element rule (0,1,1) beats a plain `.fp-rank` (0,1,0)
+   and stretches the badge from a 30px circle into a ~373px maroon lozenge.
+   Shipped that way once; every front-page item on every issue was affected, and
+   eight automated checks passed it because presence is not appearance. */
+.fp-item > .fp-rank { flex: 0 0 30px; }
+
 p.fp-h { margin: 0 0 4px; font-size: 17.5px; }        /* the headline paragraph; bold text inside */
+.fp-p { margin: 0 0 6px; font-size: 16px; line-height: 1.6; }
+/* "Why it matters:" — the brief names this clause explicitly and forbids
+   replacing it with a callout box, so it must be visually distinct inline. */
+.lbl { font-weight: 700; color: var(--accent); }
+/* The per-item pointer line (SECTION - SOURCE). Without this it renders at full
+   body size and reads as part of the story. */
+.fp-where {
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin: 0;
+}
 .fp-item p { margin: 0 0 6px; }
 .fp-cols { display: flex; gap: 22px; margin-top: 26px; }
 .fp-cols > * { flex: 1; }

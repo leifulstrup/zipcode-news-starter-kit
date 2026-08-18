@@ -26,11 +26,27 @@ passed the local gauntlet (/first-issue). If not, stop and send them there first
    `! gh auth login` (choose GitHub.com, HTTPS, login with browser).
 3. **Create the PRIVATE repo and push**:
    ```
-   gh repo create <workerName> --private --source . --push
+   # FIRST check whether a repo already exists. The README's documented happy
+   # path is "Use this template", which CREATES the repo — so on that path
+   # `gh repo create` would make a SECOND one, re-point origin at it, push
+   # everything there, and orphan the original (along with its GitHub-side
+   # workflow registrations). The user ends up with two repos, one live and one
+   # they believe is live. (Found by a field instance.)
+   git remote get-url origin
+
+   # If origin EXISTS and resolves — the template path — just push:
+   git push -u origin main
+
+   # Only if there is NO origin — the download-the-ZIP path — create one:
+   gh repo create <repo-name> --private --source . --push
    ```
    Explain why private even though the starter kit is public: their copy contains
    their privacy patterns and their editorial history; the published website is the
    public face, not the repo.
+
+   **The GitHub repo name and `workerName` are independent** and need not match:
+   `workerName` names a Cloudflare Worker, not a GitHub repository. Do not
+   "correct" one to the other.
 4. **Model credential** — the one secret GitHub needs. Two options; explain the
    difference in two sentences:
    - **Claude subscription** (Pro/Max): have them run `! claude setup-token`, copy

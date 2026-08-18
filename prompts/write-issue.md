@@ -270,6 +270,16 @@ internal link.
 
 ### 4b. Civic utility
 
+**When an item turns on a scheduled decision, carry the meeting's TIME wherever
+the source states one, and any statutory or filing deadline on the same page.**
+A field instance printed the date of a council vote but not that it was a
+*special* meeting at 9:00 a.m. rather than the regular 7:00 p.m. slot — a reader
+acting on it arrives twelve hours late — and missed a statutory deadline two
+days later that decided the whole matter. Neither was a wrong claim; both were
+the most actionable facts in the story, sitting further down a notice already
+cited. **Stopping when the story is good enough is how the useful part gets
+left out.** Read the whole notice.
+
 For any item about a decision that is still open, include what is available: the
 **docket, case, bill or application number**; the **comment deadline**, if the record
 is open; the **body and office** to write to, and the portal if there is one; the
