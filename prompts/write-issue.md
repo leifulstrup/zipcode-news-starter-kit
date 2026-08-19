@@ -49,12 +49,12 @@ Read these five things, in this order:
 4. **`data/lessons-learned.md`** — the accumulated rules. The standing rules at the
    top are the consolidated version; read those in full.
 5. **The most recent file in `issues/`** — match its house style exactly. If there
-   is no previous issue, **start your `<style>` block from
-   `fixtures/house-style.css`** (inline the whole sheet and set its three custom
-   properties from `site.config.json` colors), then follow the Structure section
-   below. Do not invent a stylesheet from the prose description — the first
-   field instance did, and its issue came out structurally correct and visually
-   generic. Do not style or emit site chrome (`.sitenav`, `.issuebar`,
+   is no previous issue, **inline `fixtures/house-style.css` as your `<style>` block** and set its three
+   colour tokens from `site.config.json`. That file is the *actual* stylesheet of
+   the reference publication, contributed to the kit and MIT-licensed — not a
+   description of it and not a reimplementation. Use it whole; do not retype it,
+   summarise it, or rebuild it from the prose below. The Structure section tells
+   you the markup it expects. Do not style or emit site chrome (`.sitenav`, `.issuebar`,
    `.sitefoot`, `.wrap`) — build.mjs owns those, including the reading column.
 
 ---

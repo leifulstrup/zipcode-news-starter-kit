@@ -153,6 +153,8 @@ try {
 // (and in CI, which installs it for the PDF) it catches the class of failure
 // every text-based gate is blind to.
 {
+  // Regenerate first: a stale styled fixture would prove the wrong thing.
+  spawnSync(process.execPath, ['bin/make-styled-fixture.mjs'], { cwd: ROOT, encoding: 'utf8' });
   const rc = spawnSync(process.execPath, ['bin/render-check.mjs'], { cwd: ROOT, encoding: 'utf8' });
   const out = (rc.stdout ?? '') + (rc.stderr ?? '');
   const skipped = /SKIPPED/.test(out);
