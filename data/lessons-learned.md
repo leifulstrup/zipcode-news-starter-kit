@@ -177,6 +177,24 @@ So, before relying on any check — a gate, a probe, a fixture, a green CI run:
 Six of the eight above would have been caught by that one question, asked once.
 It costs a sentence. It is the cheapest thing in this file.
 
+There is a mirror image of this, and it is harder to see. A robustness fix can
+work so well that it erases the evidence it was needed. The PDF renderer
+neutralizes a stray reading-column rule, so an issue that wrongly styles site
+chrome renders correctly and nothing anywhere goes red — the defense consumed the
+symptom that would have surfaced the mistake. This is not a check answering too
+narrow a question; it is a fix removing the question. The remedy is the opposite
+one: when you harden something against a class of input, ask what used to go
+wrong loudly and now goes wrong quietly, and put an explicit check where the
+symptom used to be.
+
+And the inverse of the whole section, which is the cheapest failure of all: **a
+gate that can fire on correct input is worse than no gate**, because it trains
+its audience to route around it. A fatal chrome check once scanned the raw file
+for the word "sitenav" — so an issue whose stylesheet carried the comment *never
+style .sitenav here*, written by an author documenting that they were doing the
+right thing, would have failed the run and published nothing.
+
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it

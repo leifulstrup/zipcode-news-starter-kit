@@ -169,10 +169,29 @@ want(!/\b(?:subscribe to|sign up for|join)\s+(?:our|the|this)?\s*(?:newsletter|m
 // bar, footer, canonical/OG tags). Saving an already-built page back into issues/
 // makes the next build wrap it a second time — two navs, two footers, and it looks
 // like a CSS bug rather than a content bug.
-for (const marker of ['sitenav', 'issuebar', 'sitefoot', 'site-chrome'])
-  need(!html.includes(marker),
-    `Issue already contains the site chrome ("${marker}"). issues/ must hold the bare issue — ` +
-    `build.mjs adds the nav, issue bar and footer. Do not save a built page back into issues/.`);
+//
+// Match the MARKUP, not the bare word. A raw substring scan over the whole file
+// is fatal on correct input: an issue whose stylesheet carries the comment
+// "never style .sitenav here" — an author documenting that they are doing the
+// right thing — would fail the run and publish nothing. It would also fire on a
+// source URL, an addendum quotation, or any issue that discusses the kit. The
+// warning immediately below strips comments for exactly this reason; this gate
+// is the fatal one and had no such guard. A gate that can fire on correct input
+// is worse than no gate: it trains its audience to route around it.
+// (90706 field instance; reachable one natural comment edit away.)
+{
+  const body = html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')       // stylesheets are checked separately
+    .replace(/<!--[\s\S]*?-->/g, ' ');                 // HTML comments are not content
+  for (const marker of ['sitenav', 'issuebar', 'sitefoot'])
+    need(!new RegExp(`class\\s*=\\s*["'][^"']*\\b${marker}\\b`).test(body),
+      `Issue already contains the site chrome (an element with class "${marker}"). issues/ must hold ` +
+      `the bare issue — build.mjs adds the nav, issue bar and footer. Do not save a built page back ` +
+      `into issues/.`);
+  need(!/id\s*=\s*["']site-chrome["']/.test(body),
+    'Issue already contains the injected chrome stylesheet (id="site-chrome"). issues/ must hold the ' +
+    'bare issue; do not save a built page back into issues/.');
+}
 
 // Geography honesty. Almost no US data geography (police district, school
 // attendance zone, council ward) matches a postal ZIP. The config's geographyNote

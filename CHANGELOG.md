@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.13.3] — 2026-08-19
+
+### Fixed
+- **A fatal gate could fire on correct input.** The double-wrap check scanned the
+  raw file for the bare words `sitenav` / `issuebar` / `sitefoot` /
+  `site-chrome`, so an issue whose stylesheet carried the comment *"never style
+  .sitenav here"* — an author documenting that they were doing the right thing —
+  would have **failed the run and published nothing**. It would also fire on a
+  source URL, an addendum quotation, or any issue that discusses the kit. It now
+  matches the markup (`class="sitenav"`, `id="site-chrome"`) with stylesheets and
+  HTML comments excluded. **A gate that can fire on correct input is worse than
+  no gate: it trains its audience to route around it.**
+
+  Found while testing v0.13.2's new warning, which strips comments for exactly
+  this reason — two adjacent gates guarding the same concept, one hardened and
+  one not, and the un-hardened one was the fatal one. It was unreachable by luck
+  rather than design: the shipped stylesheet's header happens to say "the nav,
+  issue bar, footer" in spaced words, and v0.13.2's own warning message writes
+  them as class names, one natural edit away.
+
+### Added
+- **A coda to the Part 1 section**, drafted by the field instance: the mirror
+  image of a check that passes for the wrong reason is **a fix that works so well
+  it erases the evidence it was needed**. Not a check answering too narrow a
+  question — a fix removing the question. Remedy runs the opposite way: when you
+  harden something against a class of input, ask what used to go wrong loudly and
+  now goes wrong quietly, and put an explicit check where the symptom used to be.
+  Plus the inverse failure above, as the section's closing line.
+
+*Verified: an issue whose stylesheet comment names all four chrome classes now
+passes (exit 0); the genuinely double-wrapped fixture still fails fatally on the
+intended message (exit 1); doctor green. Reasoned: nothing.*
+
 ## [0.13.2] — 2026-08-19
 
 ### Added
