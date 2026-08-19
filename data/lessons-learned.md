@@ -126,6 +126,57 @@ source dead. Some sources delete their own history — record retention windows 
 archive on every run. Institutions rename and reorganize; re-verify
 institution-named registry entries quarterly.
 
+**The dangerous failure is the check that passes for the wrong reason.**
+Every serious defect found in field testing was green somewhere it should have
+been red — and in each case the check was doing exactly what it was written to
+do. The gates did not malfunction. They answered a narrower question than the one
+being asked of them, and the gap between the two questions is where the defects
+lived. Eight, from two instances:
+
+- `verify-issue` confirmed the rank-badge markup was present. **Presence is not
+  appearance** — it rendered as a 373px maroon lozenge, because a bare-element
+  rule four lines below out-specified the class. Fixed by adding a renderer, not
+  a stricter parser.
+- Both false figures were **genuinely fetched**. "Every number is fetched, not
+  asked for" moved the risk from the value to the *window*: a source retaining a
+  rolling twelve months, compared against "same day last year", returns a handful
+  of late-filed stragglers; windows anchored to the issue date rather than the
+  newest record produced a 68% drop in reported crime that was entirely reporting
+  lag. Correct arithmetic, successful queries, false statements about the world.
+- `doctor` passed 10/10 while `/setup` told the publisher it "confirms the
+  configuration is coherent." It read no config at all.
+- The gates' fixture and the file publishers actually inline **were different
+  files**, so the shipped stylesheet was never exercised. Three separate defects
+  came out of that one gap.
+- Then the fixture built to close that gap **prepended** the stylesheet to the
+  fixture's own rules instead of replacing them, so the later rules won the
+  cascade and the badge measured 21px against the sheet's 26px. The check built
+  to prove appearance was proving the wrong thing, green. The failure mode of a
+  verification artifact is not that it is absent — it is that it is subtly not
+  the thing it claims to represent.
+- `git checkout --ours` resolved a config conflict cleanly, passed doctor, and
+  silently dropped three new keys. The only symptom was a feature politely
+  reporting it had nothing to look up.
+- A workflow guard gated thirteen steps and missed the six that spend money,
+  because the agent variable is set at job level and stayed true when the guard
+  was false.
+- An adapter's own reporting-lag warning fired above fourteen days. The lag was
+  thirteen. **Never threshold a provenance warning you would want stated every
+  time.**
+
+The through-line: **a check earns trust in proportion to how specifically it
+could fail.** "Is the markup present" cannot fail on a visual bug. "Is the config
+coherent" cannot fail if it never reads the config. A green result is only as
+strong as the set of things capable of turning it red.
+
+So, before relying on any check — a gate, a probe, a fixture, a green CI run:
+
+> **Say out loud what it would take for this to go red, and confirm that includes
+> the thing you are actually worried about.**
+
+Six of the eight above would have been caught by that one question, asked once.
+It costs a sentence. It is the cheapest thing in this file.
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.13.1] — 2026-08-19
+
+### Added
+- **`data/lessons-learned.md` Part 1 gains the pattern the field tests kept
+  producing**, drafted by the second field instance and merged substantially as
+  written: *the dangerous failure is the check that passes for the wrong
+  reason.* Eight instances, each with the scar attached — presence is not
+  appearance; both false figures were genuinely fetched; doctor passed while
+  claiming to check a config it never read; the gates' fixture and the file
+  publishers inline were different files; the fixture built to close that gap
+  then measured a cascade no real issue would have; `--ours` dropped three keys
+  silently; a guard covered thirteen steps and missed the six that spend money;
+  a lag warning thresholded at fourteen days when the lag was thirteen.
+
+  The rule: **a check earns trust in proportion to how specifically it could
+  fail** — and the question to ask before relying on one: *say out loud what it
+  would take for this to go red, and confirm that includes the thing you are
+  actually worried about.* Six of the eight would have been caught by asking it
+  once.
+
+*Verified: the section renders in the shipped file and doctor stays green.
+Reasoned: nothing — this release is documentation.*
+
 ## [0.13.0] — 2026-08-19
 
 ### Changed
@@ -577,6 +600,11 @@ then `git tag v<version> && git push --tags && gh release create v<version>
 --latest --title "..." --notes "<this entry>"` — every version is a [GitHub
 Release](https://github.com/leifulstrup/zipcode-news-starter-kit/releases), not
 just a tag.
+
+Entries mark **what was verified against a running instance** versus what was
+reasoned from the code, because a reader deciding what to re-check deserves to
+know where the author's own confidence is lowest. Field-test findings say which
+instance found them.
 
 Publishers: your own instance's editorial history belongs in `data/lessons-learned.md`
 and git — this file tracks the **kit framework** only. After pulling a kit update
