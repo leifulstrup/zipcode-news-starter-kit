@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.13.2] — 2026-08-19
+
+### Added
+- **`verify-issue` warns when an issue's stylesheet declares rules for site
+  chrome** (`.wrap`, `.sitenav`, `.issuebar`, `.sitefoot`). The existing check
+  catches chrome *markup*; nothing caught chrome *CSS* — and the injected print
+  stylesheet neutralizes a stray `.wrap` rule so effectively that such an issue
+  renders correctly in the browser and in the PDF. An instance could style
+  chrome, pass every check, and look fine everywhere. **A defense that works so
+  well it erases the evidence it was needed** is the same shape as everything in
+  Part 1's list, so it now leaves a trace. Declarations only — the shipped
+  stylesheet's own comments legitimately name these selectors to tell authors not
+  to style them.
+
+*Verified: the warning fires on an issue carrying real `.wrap`/`.sitenav` rules,
+and does not fire on the shipped stylesheet whose comments mention them; doctor
+green. Reasoned: nothing.*
+
+*Also settled this release: the v0.13.0 claim marked "reasoned, not verified" —
+that stripping `.wrap` from the sheet has no effect on the PDF path — was
+independently A/B-tested by the field instance and holds for three separate
+reasons (the PDF renders the bare issue, which has no `.wrap` element; the print
+column comes from `@page` margins; and the injected print CSS already neutralizes
+any such rule). Rendering with a hostile `.wrap{max-width:380px;padding:60px}`
+produced an identical 9-page PDF, 117-byte delta, metadata only.*
+
 ## [0.13.1] — 2026-08-19
 
 ### Added

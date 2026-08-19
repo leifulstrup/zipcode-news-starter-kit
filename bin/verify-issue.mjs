@@ -103,6 +103,28 @@ need(/class="frontpage"/.test(contentHtml),
     'An @media rule appears outside <style> — stylesheet text is leaking into the page body. Move it inside the <style> block.');
 }
 
+// An issue must not STYLE site chrome, only avoid emitting it. The existing
+// check catches chrome markup; nothing caught chrome CSS — and the print
+// stylesheet neutralizes a stray `.wrap` rule so effectively that such an issue
+// renders correctly everywhere, removing the only signal that the mistake
+// happened. A defense that works so well it erases the evidence it was needed is
+// the same shape as everything else in lessons-learned Part 1's list, so it gets
+// a warning rather than silence. (90706 field instance.)
+{
+  // Declarations only: this file's own stylesheet comments legitimately mention
+  // these selectors to tell authors not to style them.
+  const styleBlocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)]
+    .map(m => m[1].replace(/\/\*[\s\S]*?\*\//g, ' '))
+    .join('\n');
+  const chromeStyled = ['wrap', 'sitenav', 'issuebar', 'sitefoot']
+    .filter(c => new RegExp(`\\.${c}\\b[^{};]*\\{`).test(styleBlocks));
+  want(chromeStyled.length === 0,
+    `The issue's stylesheet declares rules for site chrome (${chromeStyled.map(c => '.' + c).join(', ')}). ` +
+    `build.mjs owns the nav, issue bar, footer and reading column — two files styling one thing will ` +
+    `disagree, and the one you are not looking at wins. Remove those rules; see prompts/write-issue.md, ` +
+    `"Write the bare issue, not a finished web page".`);
+}
+
 // Front-page items must be structurally IDENTICAL. One issue in the reference
 // implementation shipped with item 5 written as `<div class="fp-rank low">` and a
 // headline with no <b> — it rendered as a broken stylesheet rather than an
