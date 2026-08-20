@@ -195,6 +195,17 @@ style .sitenav here*, written by an author documenting that they were doing the
 right thing, would have failed the run and published nothing.
 
 
+**On writing about the publisher.**
+The publication may state facts about its operator only from what the operator
+supplied — affiliations, employment, board seats, financial interests,
+independence. Not from inference, and not from a reasonable guess. The kit once
+auto-asserted independence on every page, which was catchable because it was
+identical everywhere; an agent then removed that template claim and wrote its own
+bespoke, hedged, first-person version about a publisher nobody had asked, which
+was harder to catch for exactly that reason. **Prose that looks authored gets less
+scrutiny than prose that looks generated.** Where a disclosure seems needed and
+none was given, say so and stop.
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it

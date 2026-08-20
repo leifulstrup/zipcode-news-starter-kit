@@ -1,6 +1,6 @@
 {
   "name": "zipcode-news-starter-kit",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "private": true,
   "type": "module",
   "description": "Starter kit for a weekly, AI-written, gate-checked neighborhood brief for a US ZIP code, published as a static site on Cloudflare",

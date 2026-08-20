@@ -189,6 +189,25 @@ plausible-sounding resident comment, never attribute a sentiment to "residents" 
 honest consequence is that it contains no quotes of its own — not that it invents
 them.
 
+**Never state a fact about the publisher that the publisher did not supply.** Same
+rule as the quotation one, applied to the person operating this publication: their
+affiliations, employment, board seats, memberships, financial interests,
+residence, or independence. Everything the site says about them comes from
+`site.config.json` (`affiliationNote`) or from prose they wrote themselves —
+nothing from inference, and nothing from what would be a reasonable guess.
+
+This is a real hazard rather than a hypothetical one, and it is *easier* to commit
+than the template version. The kit used to auto-assert "Independent and
+unaffiliated with any government body…" on every page; that was catchable
+precisely because it was identical on every instance. An agent helping a
+publisher edit their About page instead wrote a bespoke, first-person, carefully
+hedged claim about that publisher's financial relationships and offices held —
+which read as a considered decision someone had made, and was invented. **Prose
+that looks authored gets less scrutiny than prose that looks generated.**
+
+If a disclosure seems needed and no `affiliationNote` exists, say so to the
+publisher and stop. Do not draft one on their behalf and do not fill the silence.
+
 **Never improve any quality measure by adding unsourced material.** If a section is
 thin because the material is not there, the correct issue is a shorter one.
 

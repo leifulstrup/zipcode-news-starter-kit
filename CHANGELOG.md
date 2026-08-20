@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.16.1] — 2026-08-20
+
+### Added
+- **"Never state a fact about the publisher that the publisher did not supply"** —
+  a new rule in the editorial brief, beside "never generate a quotation", because
+  it is the same rule applied to the person operating the publication:
+  affiliations, employment, board seats, memberships, financial interests,
+  residence, independence. Everything the site says about them comes from
+  `affiliationNote` or from prose they wrote themselves.
+
+  Not hypothetical. While *fixing* v0.16.0's auto-asserted independence claim, a
+  field agent removed the template's version and wrote its own — a bespoke,
+  first-person, carefully hedged statement about that publisher's financial
+  relationships and offices held, which nobody had asked them about and which was
+  invented. It was on the page for as long as the template's version had been.
+
+  The generalisable part, and the reason this needed writing down: **prose that
+  looks authored gets less scrutiny than prose that looks generated.** The
+  template claim was catchable because it was identical on every instance. A
+  bespoke sentence reads as a decision someone made. That makes this the *easier*
+  mistake to commit, not the harder one — and it is the one an agent is uniquely
+  positioned to make while helping edit an About page.
+
+  Also in `/first-issue`'s About-page step (where an agent is most likely to do
+  it) and in `data/lessons-learned.md` Part 1. Where a disclosure seems needed
+  and none was supplied: say so and stop. Do not fill the silence.
+
+*Verified: the rule renders in the brief, the skill and the lessons file; doctor
+and build green. Reasoned: nothing — this release is documentation.*
+
 ## [0.16.0] — 2026-08-20
 
 Continues v0.15.0's theme to its strongest case, and pays a cost the About-page

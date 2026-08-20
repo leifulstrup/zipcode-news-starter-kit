@@ -85,6 +85,15 @@ looking at it:
   sourcing.** A field instance shipped a page promising two beats its own issue
   said, in print, it had no source for. Name only the beats they actually have
   sources for, and say plainly which they do not.
+- **Never write a claim about the publisher that they did not give you.**
+  Affiliations, employment, board seats, financial interests, independence. If
+  `affiliationNote` is empty the page deliberately says nothing — do not fill
+  that silence with a reasonable-sounding sentence, even a hedged first-person
+  one. A field agent did exactly this while *fixing* the kit's auto-asserted
+  independence claim: it removed the template's version and wrote its own,
+  invented, about a publisher nobody had asked. Bespoke prose gets less scrutiny
+  than generated prose, which makes this the easier mistake, not the harder one.
+  Ask the publisher; if they do not answer, the page stays silent.
 - **If there is no `contactEmail`, the page now says so** — that the publication
   expects errors and offers no route to report one. That is honest and
   uncomfortable, which is the point. If they would rather it not say that, the
