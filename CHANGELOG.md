@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.14.2] — 2026-08-20
+
+### Changed
+- **Removed the claim that reader names, addresses and email addresses are
+  "never stored in the repository that produces this site."** Publisher's
+  decision. It was a specific, checkable assertion about a system the kit cannot
+  guarantee on a publisher's behalf: a feedback inbox necessarily holds sender
+  addresses, and what a publisher does with a message they receive is theirs to
+  decide, not the kit's to promise in print. A promise a publisher did not make,
+  printed on the page they are held to, is worse than no promise.
+
+  The request to readers remains — *please do not send personal information about
+  yourself or anyone else* — as does the Privacy section's account of what the
+  **site** does, which is what the kit actually controls: no accounts, no login,
+  no signup, no tracking cookies of its own, coverage at neighborhood scale and
+  never identifying a household.
+
+*Verified: the claim is absent from the rendered page; the Privacy section and the
+do-not-send request both still stand. Reasoned: nothing.*
+
 ## [0.14.1] — 2026-08-20
 
 ### Changed

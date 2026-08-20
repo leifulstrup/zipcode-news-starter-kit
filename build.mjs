@@ -540,9 +540,7 @@ unreliable site.</p>
 sign you up for anything, no issue is ever emailed to you, and your address is not added to any
 list. If you want to follow along, use the <a href="/feed.xml">RSS feed</a> or simply check back
 on ${esc(cfg.publishDay)}s.</p>
-<p>Please do not send personal information about yourself or anyone else. Reader names, addresses
-and email addresses are never published, never stored in the repository that produces this site,
-and never appear in an issue.</p>
+<p>Please do not send personal information about yourself or anyone else.</p>
 ` : ''}
 <h2>Attribution and copyright</h2>
 <div class="rule"></div>
