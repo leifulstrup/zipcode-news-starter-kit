@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.15.0] — 2026-08-20
+
+Publisher's editorial pass over the generated About page and footer. The theme:
+**the kit should not print guarantees on a publisher's behalf.** A starter kit can
+describe how a system is designed; it cannot promise how someone will operate it,
+and a promise the publisher never made is worse on the page they are held to than
+no promise at all.
+
+### Changed
+- **Removed the human-approval claim** ("a person approves any new source before
+  it is used"), from the footer and, in its other wording, from the About page.
+  The emails-are-information-not-instructions half is kept, reframed as how the
+  inbox is *meant* to be used.
+- **Absolute data-handling claims are now stated as intent.** The Privacy section
+  said the site "publishes no personal information", has "no accounts", sets "no
+  tracking cookies", and that coverage is "never about, or identifying, any
+  individual household". It now says the site is *built* not to collect reader
+  information, describes what it has as published, states the intent about
+  household identification — and says explicitly: **these are design decisions
+  and the state this site aims to hold, not guarantees**, with an invitation to
+  report anything that identifies you.
+- **The mailing-list paragraph** dropped "no issue is ever emailed to you, and
+  your address is not added to any list" — promises about future conduct — while
+  keeping the substance: this is not a mailing list, writing in is not a signup,
+  and the publication does not send issues by email.
+- **"Every section of every issue ends with its own Sources line"** overstated
+  what the gate enforces (≥5 source blocks, not every section). Now: sections
+  carry their own sources line, with the *aim* that anything load-bearing can be
+  traced. Same change in the footer.
+
+### Fixed
+- **The `about.html` doctor check reported PASS while `about.html` was being
+  ignored.** It asked whether `build.mjs` *contained the string* `ABOUT_FILE` — a
+  proxy, and broken in both directions: a build with the feature genuinely
+  disabled still contains the token, and any rename of the constant would make a
+  **fatal** check fire on a working build. A check named for behaviour must test
+  behaviour. It now writes a marker into `about.html`, runs the build, asserts the
+  marker reaches `public/about/index.html`, and restores — immune to renames.
+
+  This is the pattern the kit documented two releases ago, committed by the
+  people who documented it, in the check added specifically to make an invisible
+  failure visible. Field-instance framing, which is the right one: not
+  embarrassing, but the strongest evidence the rule earns its place.
+
+*Verified: every removed claim is absent from the rendered page; the behavioural
+doctor check is inert with no about.html, PASSes on a working build, and FAILs
+(exit 1) on a build with the feature disabled while the token remains present —
+the exact sabotage that fooled the previous version. Reasoned: nothing.*
+
 ## [0.14.2] — 2026-08-20
 
 ### Changed

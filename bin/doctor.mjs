@@ -179,7 +179,7 @@ try {
 // ---------------------------------------------------------------------------
 {
   const { loadConfig } = await import('./lib/config.mjs');
-  const { readFileSync: rf, existsSync: ex } = await import('node:fs');
+  const { readFileSync: rf, existsSync: ex, writeFileSync: wf } = await import('node:fs');
   const cfg = loadConfig();
 
   // Schedules must all derive from cronUtc. sync-crons owns the arithmetic —
@@ -219,17 +219,35 @@ try {
   // looks at twice. Same shape as `--ours` dropping config keys. (90706 instance
   // flagged this while prototyping the feature.)
   if (ex(join(ROOT, 'about.html'))) {
-    const buildSrc = rf(join(ROOT, 'build.mjs'), 'utf8');
-    const ok = buildSrc.includes('ABOUT_FILE');
-    rows.push({
-      result: ok ? 'PASS' : 'FAIL',
-      case: 'about.html is actually used by the build',
-      detail: ok ? '' :
-        'about.html exists but build.mjs has no support for it — your edited About page is being ' +
-        'IGNORED and the site is serving generated prose. This is the shape a partial update ' +
-        'leaves behind: take the kit\'s build.mjs from a version >= 0.14.0, or your ownership of ' +
-        'that page is silently undone.',
-    });
+    // Test the BEHAVIOUR, not the source text. The first version of this check
+    // asked whether build.mjs contained the string "ABOUT_FILE" — which is a
+    // proxy, and a broken one in both directions: a build with the feature
+    // genuinely disabled still contains the token (so it reported PASS while an
+    // edited About page was being ignored, demonstrated in the field), and any
+    // rename of the constant makes a FATAL check fire on a build that works.
+    // A check named for behaviour must test behaviour. Write a marker, build,
+    // look for the marker in the output, restore.
+    const aboutPath = join(ROOT, 'about.html');
+    const original = rf(aboutPath, 'utf8');
+    const marker = `doctor-about-marker-${process.pid}`;
+    let ok = false, detail = '';
+    try {
+      wf(aboutPath, original + `\n<!-- ${marker} -->\n`);
+      const built = spawnSync(process.execPath, ['build.mjs'], { cwd: ROOT, encoding: 'utf8' });
+      const out = join(ROOT, 'public', 'about', 'index.html');
+      ok = built.status === 0 && ex(out) && rf(out, 'utf8').includes(marker);
+      if (!ok) {
+        detail = built.status !== 0
+          ? `build.mjs exited ${built.status} while testing about.html.`
+          : 'about.html exists but its content does NOT reach public/about/index.html — your ' +
+            'edited About page is being IGNORED and the site is serving generated prose. This is ' +
+            'the shape a partial update leaves behind: take build.mjs from kit v0.14.0 or later.';
+      }
+    } finally {
+      wf(aboutPath, original);                      // always restore, even on throw
+      spawnSync(process.execPath, ['build.mjs'], { cwd: ROOT, encoding: 'utf8' });
+    }
+    rows.push({ result: ok ? 'PASS' : 'FAIL', case: 'about.html actually reaches the built page', detail });
     if (!ok) failures++;
   }
 
