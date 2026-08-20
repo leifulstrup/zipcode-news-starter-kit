@@ -206,6 +206,38 @@ was harder to catch for exactly that reason. **Prose that looks authored gets le
 scrutiny than prose that looks generated.** Where a disclosure seems needed and
 none was given, say so and stop.
 
+
+**A negative control that does not negate is not a control.**
+Every check above had to be *tested* before it could be trusted, which means
+deliberately breaking something and confirming the check goes red. That test has
+its own failure mode, and it is the quietest one in this file: **if your broken
+case produces the same result as your working case, your sabotage did not take.**
+You have tested nothing and been told you passed.
+
+Three from the field, all caught only by noticing that results were identical
+when they were supposed to differ:
+
+- Disabling a feature by renaming its constant — renamed it *consistently*, so
+  the feature still worked. The check's PASS was correct; the test was
+  meaningless.
+- Grepping three commits for a string, to establish which ones contained it. A
+  shell-quoting bug made every command fail silently, so all three returned zero
+  — indistinguishable from *the string was never there*. One of them contained
+  it, and zero was the convenient answer.
+- Building a fixture by *prepending* a stylesheet to the one already in the file
+  rather than replacing it. Both versions rendered; the later rules quietly won
+  the cascade, so the fixture measured a page no publisher would ever ship.
+
+So, before believing a negative result: **confirm the negative control produced a
+different outcome from the positive one.** If both agree, fix the control before
+believing either. And never suppress stderr on a command whose output is your
+evidence — `2>/dev/null` turns *this failed* into *this found nothing*, and those
+are opposite conclusions.
+
+This one is worth more than most of what is above it, because it does not require
+knowing what the bug is. It only requires noticing that two cases which should
+have disagreed did not.
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it

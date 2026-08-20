@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.16.3] — 2026-08-20
+
+### Added
+- **"A negative control that does not negate is not a control"** — a new standing
+  rule in Part 1, drafted by the field instance and merged as written. Every
+  check in that section had to be *tested* before it could be trusted, which
+  means deliberately breaking something and confirming it goes red — and that
+  test has its own failure mode, the quietest in the file: **if the broken case
+  produces the same result as the working case, the sabotage did not take.** You
+  have tested nothing and been told you passed.
+
+  Three instances, each caught only by noticing that results were identical when
+  they should have differed: a feature disabled by renaming its constant
+  *consistently*, so it still worked; a grep over three commits where a
+  shell-quoting bug made every command fail silently, returning zero from all
+  three — indistinguishable from "the string was never there", and zero was the
+  convenient answer; and a fixture built by prepending a stylesheet rather than
+  replacing it, so the later rules won the cascade and the fixture measured a
+  page no publisher would ship.
+
+  The rule earns its length because it does not require knowing what the bug is.
+  It requires noticing that two cases which should have disagreed did not.
+
+*Verified: renders in the shipped lessons file; doctor and build green.
+Reasoned: nothing — documentation.*
+
 ## [0.16.2] — 2026-08-20
 
 ### Added
