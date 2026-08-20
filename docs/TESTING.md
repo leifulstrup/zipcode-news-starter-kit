@@ -86,23 +86,54 @@ For each of the three ZIPs:
 Stated plainly, because a kit that implies coverage it does not have is doing
 the thing it tells publishers not to do.
 
-**Exercised in real instances**, across two publishing instances and three
-discovery dry-runs (rural Maine, suburban Illinois, a name-collision ZIP), as of
-v0.16.4:
+### Attributed per instance, because an aggregate cannot be checked
 
-- `/setup` end to end, including a non-default timezone and the UTC day-rollover
-- `/find-sources` cold in an unfamiliar ZIP, with every rejection logged
-- adapters written from both templates, with live probes passing
-- `/first-issue` full gauntlet, twice, producing gate-clean issues and PDFs
-- `/add-source`, `/update-kit` (five merges: 20 conflicts → 1 → 0 → 0 → 0),
-  `render-check` at desktop and mobile, the rubric and its measurement
-- every gate, including deliberate sabotage of each
-- `/go-live` **up to and including the push** — repo state, command shape, `gh`
-  resolution behaviour
+An earlier version of this section combined two instances into one list. That was
+a mistake of exactly the kind this file exists to prevent: neither instance could
+verify a combined claim, so nobody checked it, and three of its statements were
+wrong — a merge sequence that belonged to one instance was printed as if it were
+both, a Socrata claim was true of neither, and a skill exercised by one was
+credited to the pair. **Attribute each line to whoever ran it, so someone can
+check their half.**
 
-**Never executed by anyone, as of v0.16.4** — the whole remaining gap, and all of
-it downstream of a credential:
+**ZIP 90744 (Wilmington, Los Angeles CA)** — six reports, one working session:
+`/setup`; `/find-sources` (25 logged candidates, five adapters, all ArcGIS);
+`/first-issue` twice, producing two gate-clean unpublished issues; `/add-source`
+(which corrected its own prior reporting — the standing-page finding);
+`/update-kit` at four version hops, the first of which took **20 conflicts**
+because the instance updated late; the privacy and verify gates; `probe-sources`;
+the rubric and its measurement; and the lag-zero gate firing on its first real
+outing. Accuracy log 6/0/0, all pre-publication, therefore zero-eighths toward
+the Experimental bar.
 
+**ZIP 90706 (Bellflower, Los Angeles CA)** — standing arrangement, still active:
+`/setup` including a non-default timezone and the UTC day-rollover;
+`/find-sources` cold in an unfamiliar ZIP with every rejection logged; two
+adapters, both from the **ArcGIS** template; `/first-issue` full gauntlet;
+`render-check` at desktop and mobile; deliberate sabotage of each gate;
+`/update-kit` at sixteen merges — **4 conflicts** on the first hop from a virgin
+copy, then essentially 0 once history was shared, with the interesting exceptions
+being 2 when `site.config.json` gained kit-owned schema and 1 when `build.mjs`
+did; and **`/go-live` up to and including the push** (repo state, command shape,
+`gh` resolution).
+
+Do not print a merge-conflict figure that could be computed. From an instance:
+`git log --merges --oneline | grep -c template/main`.
+
+The honest summary of update cost, across both: **~20 conflicts when updating
+late, ~4 on the first hop from a virgin copy, ~0 thereafter once history is
+shared.** That is an argument for updating early, which the aggregated version
+obscured.
+
+**Discovery dry-runs** (no instance): rural Maine (04543), suburban Illinois
+(60558), and Springfield Missouri (65804) as a deliberate name-collision case.
+
+**Never executed by anyone, as of v0.16.5:**
+
+- `bin/adapters/_template-socrata.mjs`. **Both** instances are in Los Angeles
+  County, whose portals are ArcGIS Hub, and both said so independently — one of
+  them correcting this project's own registry seed data. The Socrata template
+  has never produced a working adapter for anyone.
 - Cloudflare Workers Builds connection, including the build-command /
   deploy-command trap that produces a green build deploying nothing
 - the first automated weekly run in GitHub Actions
@@ -110,6 +141,9 @@ it downstream of a credential:
 - all four watchdog workflows firing against a real site
 - the daily digest against a live AgentMail send
 - the rollback drill (`git revert` an issue commit; confirm the site follows)
+- a **second consecutive issue** in one instance — so "match the previous issue's
+  house style", the volume/number increment, and the cross-issue regression check
+  firing on real drift rather than a doctored fixture are all untested
 
 `/go-live`'s first ninety seconds nonetheless produced the two worst bugs the
 kit has had (a push-capable route from a private instance to the public

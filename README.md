@@ -1,6 +1,6 @@
 # zipcode-news-starter-kit
 
-**Version 0.16.4** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
+**Version 0.16.5** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
 the kit is versioned.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own

@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.16.5] — 2026-08-20
+
+### Fixed
+- **The honesty document overstated coverage in three places** — one release
+  after being refreshed for understating it. Caught by the instance it described,
+  which is the only party that could check its own half:
+  - A merge-conflict sequence belonging to one instance was printed as if it
+    described both (`20 → 1 → 0 → 0 → 0`). The second instance's real first hop
+    was **4 conflicts from a virgin copy**, then ~0 once history was shared. The
+    honest cross-instance summary is *~20 late, ~4 early, ~0 thereafter* — which
+    argues for updating early, and the aggregate obscured that.
+  - "Adapters written from both templates" was true of **neither** instance. Both
+    are in Los Angeles County, whose portals are ArcGIS Hub; both reported so
+    independently, one of them correcting this project's own registry seed data.
+    **`_template-socrata.mjs` has never produced a working adapter for anyone**,
+    and now says so.
+  - `/add-source` was credited to both; only 90744 exercised it.
+
+  The section is now **attributed per instance**, so each party can check their
+  own half — an aggregate claim is one nobody can verify, which is how three
+  wrong statements sat in the file that exists to prevent exactly that. And a
+  merge figure that could be computed should not be typed: the command is in the
+  file instead.
+
+  Worth recording the asymmetry the reporting instance noticed: the previous
+  version *understated* coverage in one place and *overstated* it in three, and
+  the direction of the error changed when the author changed. Summarising someone
+  else's work inflates; summarising your own deflates.
+
+*Verified: each attributed line traces to a specific report from the instance
+credited; the Socrata claim checked against both instances' independent findings
+about LA County portals. Reasoned: nothing — but note that 90744's session has
+ended, so its half rests on its own reports rather than on a repo I can inspect,
+which is stated rather than hidden.*
+
 ## [0.16.4] — 2026-08-20
 
 ### Added
