@@ -86,26 +86,30 @@ For each of the three ZIPs:
 Stated plainly, because a kit that implies coverage it does not have is doing
 the thing it tells publishers not to do.
 
-**Exercised in a real instance** (ZIP 90744, Wilmington CA, six reports across
-one working session; assisted by Claude Opus 5 — recorded because the kit is
-model-agnostic and which model found which silent failure is part of the
-result): `/setup`, `/find-sources` (25 logged source candidates, five working
-adapters), `/first-issue` (two complete gate-clean issues), `/add-source`,
-`/update-kit` (four merges: 20 conflicts → 1 → 0 → 0), the privacy and verify
-gates, `doctor`, `probe-sources`, the rubric and its measurement, and the
-lag-zero gate firing correctly on its first real outing. Plus three discovery
-dry-runs across a rural, a suburban, and a name-collision ZIP.
+**Exercised in real instances**, across two publishing instances and three
+discovery dry-runs (rural Maine, suburban Illinois, a name-collision ZIP), as of
+v0.16.4:
 
-**Never executed by anyone, as of v0.7.5:**
+- `/setup` end to end, including a non-default timezone and the UTC day-rollover
+- `/find-sources` cold in an unfamiliar ZIP, with every rejection logged
+- adapters written from both templates, with live probes passing
+- `/first-issue` full gauntlet, twice, producing gate-clean issues and PDFs
+- `/add-source`, `/update-kit` (five merges: 20 conflicts → 1 → 0 → 0 → 0),
+  `render-check` at desktop and mobile, the rubric and its measurement
+- every gate, including deliberate sabotage of each
+- `/go-live` **up to and including the push** — repo state, command shape, `gh`
+  resolution behaviour
 
-- Cloudflare Workers Builds connection — including the build-command /
+**Never executed by anyone, as of v0.16.4** — the whole remaining gap, and all of
+it downstream of a credential:
+
+- Cloudflare Workers Builds connection, including the build-command /
   deploy-command trap that produces a green build deploying nothing
 - the first automated weekly run in GitHub Actions
 - `SITE_BASE_URL` wiring and `bin/smoke-test.mjs` against a live host
-- all four watchdog workflows (`smoke`, `publication-check`, `sources`, and the
-  weekly pipeline end to end)
+- all four watchdog workflows firing against a real site
 - the daily digest against a live AgentMail send
-- `/go-live` past its opening steps
+- the rollback drill (`git revert` an issue commit; confirm the site follows)
 
 `/go-live`'s first ninety seconds nonetheless produced the two worst bugs the
 kit has had (a push-capable route from a private instance to the public
