@@ -112,6 +112,20 @@ line adversarially. That is the same hazard the accuracy log warns about — *be
 most suspicious of a check whose result favours you* — arriving in the document
 about coverage rather than in an issue.
 
+And that mechanism is weaker than it sounds, which is worth knowing before you
+rely on it. The instance that caught the flattering line about itself reported
+honestly how: it read the line, accepted it, and moved on — returning only
+because it had just written a paragraph about negative space, against which the
+phrase surfaced. **The correction was a side effect of having recently had the
+right idea in hand, not of vigilance.** Nobody should plan on catching a
+convenient error about themselves by resolving to be careful.
+
+The practical form: read your own attributed lines *after* doing something that
+makes the relevant absence salient — an inventory of what you did not do, a list
+of what remains untested — rather than on a straight read-through. And treat
+per-instance attribution as putting the claim in front of the only person who
+*can* catch it, not as ensuring they will.
+
 **ZIP 90744 (Wilmington, Los Angeles CA)** — six reports, one working session:
 `/setup`; `/find-sources` (25 logged candidates, five adapters, all ArcGIS);
 `/first-issue` twice, producing two gate-clean unpublished issues; `/add-source`

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.16.7] — 2026-08-20
+
+### Added
+- **An honest caveat on the mechanism this document recommends.** v0.16.6 said
+  per-instance attribution works only if the attributed party reads their own
+  line adversarially — which implies a reliable act of will. The instance that
+  performed the catch reported otherwise: it read the flattering line, accepted
+  it, and moved on, returning only because it had just written a paragraph about
+  negative space against which the phrase surfaced. **The correction was a side
+  effect of having recently had the right idea in hand, not of vigilance.**
+
+  Recorded because a document about coverage should not overstate the
+  reliability of its own safeguard. The practical form is now stated: read your
+  attributed lines *after* doing something that makes the relevant absence
+  salient — an inventory of what you did not do — rather than on a straight
+  read-through. Attribution puts a claim in front of the only person who *can*
+  catch it; it does not ensure they will.
+
+*Verified: renders in the shipped document; doctor green. Reasoned: nothing.*
+
 ## [0.16.6] — 2026-08-20
 
 ### Fixed
