@@ -96,6 +96,22 @@ both, a Socrata claim was true of neither, and a skill exercised by one was
 credited to the pair. **Attribute each line to whoever ran it, so someone can
 check their half.**
 
+And know that attribution is necessary but not sufficient, because the mechanism
+has two halves:
+
+- **Summarising someone else's work inflates.** Their reports carry successes in
+  detail and non-attempts not at all, so absence reads as coverage.
+- **Reading a summary of your own work suppresses the correction**, because the
+  inflated version is the one you would prefer. Both errors above were caught
+  only on a second pass by the person they flattered — including, one release
+  later, a line crediting an instance with sabotaging "each gate" when it had
+  sabotaged six and inherited the rest from shipped fixtures.
+
+So per-instance attribution only works if the attributed party reads their own
+line adversarially. That is the same hazard the accuracy log warns about — *be
+most suspicious of a check whose result favours you* — arriving in the document
+about coverage rather than in an issue.
+
 **ZIP 90744 (Wilmington, Los Angeles CA)** — six reports, one working session:
 `/setup`; `/find-sources` (25 logged candidates, five adapters, all ArcGIS);
 `/first-issue` twice, producing two gate-clean unpublished issues; `/add-source`
@@ -110,7 +126,13 @@ the Experimental bar.
 `/setup` including a non-default timezone and the UTC day-rollover;
 `/find-sources` cold in an unfamiliar ZIP with every rejection logged; two
 adapters, both from the **ArcGIS** template; `/first-issue` full gauntlet;
-`render-check` at desktop and mobile; deliberate sabotage of each gate;
+`render-check` at desktop and mobile; **deliberate sabotage of six gates and
+checks** — privacy-scan (a probe carrying six distinct hazards), the fatal
+chrome-markup gate, the chrome-CSS warning (including a comment-only negative
+case), the About wiring in both its failure modes, the `.fp-cols` layout mode at
+a phone viewport, and the PDF render path — with the remaining gates exercised
+only via `doctor`'s shipped fixtures, which is coverage of fixtures someone else
+wrote rather than sabotage this instance devised;
 `/update-kit` at sixteen merges — **4 conflicts** on the first hop from a virgin
 copy, then essentially 0 once history was shared, with the interesting exceptions
 being 2 when `site.config.json` gained kit-owned schema and 1 when `build.mjs`

@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.16.6] — 2026-08-20
+
+### Fixed
+- **"Deliberate sabotage of each gate" overstated one instance's work** — caught
+  by that instance, reading its own attributed line. It authored sabotage for
+  **six** gates and checks; the rest are exercised only by `doctor`'s shipped
+  fixtures, which is coverage of fixtures someone else wrote rather than sabotage
+  the instance devised. Now enumerated.
+
+### Added
+- **The second half of the summarising hazard.** v0.16.5 recorded that
+  summarising someone else's work inflates, because reports carry successes in
+  detail and non-attempts not at all. The completing half: **reading a summary of
+  your own work suppresses the correction**, because the inflated version is the
+  one you would prefer. Both errors in this file were caught only on a second
+  pass by the party they flattered.
+
+  So per-instance attribution is necessary but not sufficient — it only works if
+  the attributed party reads their own line adversarially. That is the accuracy
+  log's *be most suspicious of a check whose result favours you*, arriving in the
+  document about coverage rather than in an issue.
+
+*Verified: the enumeration matches the six sabotage runs reported at the time,
+each traceable to the release it was performed against. Reasoned: nothing.*
+
 ## [0.16.5] — 2026-08-20
 
 ### Fixed
