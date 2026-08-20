@@ -116,6 +116,34 @@ isolation rather than only as part of a full run.** Most of its failure surface
 is repo state and command shape, not cloud infrastructure, and that part is
 testable without spending a cent or creating an account.
 
+## What actually produced the findings
+
+Worth recording, because it is not what a testing document usually says. Across
+twenty releases of hardening — every one traceable to something that broke or
+looked wrong in a real ZIP — **none of it came from reviewing our own work more
+carefully.** It came from two things:
+
+1. **One party builds; a different party holds it wrong on purpose.** The builder
+   can verify that nothing broke. Establishing that nothing *could* break
+   generally requires someone who did not write it, deliberately constructing the
+   input that would embarrass it. Those are different claims, and only the second
+   one finds a check that passes for the wrong reason.
+2. **Neither party takes the other's word.** Release notes were counted, not
+   read: a note claiming "all thirteen steps are covered" was verified by
+   counting the steps, which is how the six that spend money were found
+   uncovered. A claim marked "verified" was re-run; a claim marked "reasoned" was
+   the one checked first.
+
+That second habit needs a convention to work, and the one that worked is cheap:
+**mark what you verified against a running instance versus what you reasoned from
+the code.** It does not make either party more accurate. It makes uncertainty
+legible, so attention lands where the doubt actually is — and writing "reasoned"
+next to a claim is uncomfortable enough that you often go and verify it instead.
+
+If you are testing this kit, the implication is direct: a single careful person
+reviewing their own instance will find less than two people with one instance
+each and a habit of disbelieving each other's summaries.
+
 ## Release checklist — the cross-skill question
 
 Ask of every change, before release:

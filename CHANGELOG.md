@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.16.4] — 2026-08-20
+
+### Added
+- **`docs/TESTING.md` records what actually produced the findings**, because it
+  is not what a testing document usually says: across twenty releases of
+  hardening, none of it came from either party reviewing their own work more
+  carefully. It came from one party building while a different party held it
+  wrong on purpose, and from neither taking the other's summary on trust —
+  release notes were counted rather than read, which is how a guard claiming
+  thirteen covered steps was found to miss the six that spend money.
+
+  With the convention that made the second habit work: **mark what you verified
+  against a running instance versus what you reasoned from the code.** It does
+  not make anyone more accurate; it makes uncertainty legible, so attention lands
+  where the doubt is — and writing "reasoned" beside a claim is uncomfortable
+  enough that you often go and verify it instead.
+
+*Verified: renders in the shipped doc; doctor green. Reasoned: nothing.*
+
 ## [0.16.3] — 2026-08-20
 
 ### Added
