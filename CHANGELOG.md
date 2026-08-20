@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.14.1] — 2026-08-20
+
+### Changed
+- **Removed the About page's claim that archived issues are never retroactively
+  corrected.** Publisher's decision. It was a binding promise the kit made on
+  every publisher's behalf, and it foreclosed a policy many publications
+  legitimately choose — appending a correction to the archived piece where the
+  error was made, so a reader who finds the wrong issue also finds the
+  correction. The kit should not commit a publisher to an editorial policy they
+  did not choose.
+
+  What remains is the part that is true regardless: *always check an issue's date
+  before relying on it — an issue reports what the sources said on the day it was
+  written.*
+- `docs/OPERATIONS.md` no longer asserts the same promise on the publisher's
+  behalf. It now says plainly that how a published issue is corrected is the
+  publisher's policy to set and to state, presents the reference publication's
+  default as a default rather than a rule, and points at `--eject-about` as where
+  to write whatever they decide.
+
+*Verified: the claim is absent from the rendered About page; the Corrections
+section still stands on its own and still states the post-publication accuracy
+check. Reasoned: nothing.*
+
 ## [0.14.0] — 2026-08-20
 
 ### Changed

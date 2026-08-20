@@ -514,9 +514,8 @@ scale — never about, or identifying, any individual household.</p>
 <h2>Corrections</h2>
 <div class="rule"></div>
 <p>Errors are expected in an unreviewed, AI-generated publication. Where a figure here conflicts
-with the source cited beside it, <b>the source governs</b>. Past issues in the
-<a href="/archive/">archive</a> are kept as published and are not retroactively corrected or
-updated, so always check an issue's date before relying on it.</p>
+with the source cited beside it, <b>the source governs</b>. Always check an issue's date before
+relying on it: an issue reports what the sources said on the day it was written.</p>
 <p>Accuracy is checked after publication rather than before it: three claims from each issue are
 verified against the sources cited beside them and the result recorded. The word "Experimental"
 comes off the masthead only after eight consecutive issues with no wrong claim.</p>${cfg.contactEmail ? '' : `

@@ -103,7 +103,12 @@ quiet a real failure.**
 
 ## What may be changed in a published issue
 
-Readers are promised that archived issues are kept as published. The precise rule:
+How you handle a published issue that turns out to be wrong is **your editorial
+policy to set and to state** — the About page is yours to edit (`node build.mjs
+--eject-about`), and whatever it says is what readers are entitled to. The kit
+does not decide this for you. What follows is the default the reference
+publication uses, and the reasoning behind it, so you are choosing rather than
+inheriting:
 
 - **Never changed — anything the issue asserted.** A figure, a date, a legal
   status, an attribution. If wrong, it is corrected in a *later* issue, never
