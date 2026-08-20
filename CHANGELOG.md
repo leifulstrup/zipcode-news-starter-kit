@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.16.2] — 2026-08-20
+
+### Added
+- **"Be most suspicious of a check whose result favours you"** — added to the
+  accuracy-log method, because that is exactly the situation it describes: a
+  publisher grading their own publication, where *correct* is the convenient
+  answer, so an inconvenient finding gets investigated and a convenient one gets
+  accepted. Plus the mechanism that makes it concrete: **never suppress stderr on
+  a command whose output is your evidence** — `2>/dev/null` turns "this failed"
+  into "this found nothing", and those are opposite conclusions.
+
+  From a field agent that nearly recorded a clean result on a question about its
+  own conduct, because a broken command returned an empty answer that read as an
+  exoneration. It caught it by the same tell as the last two: a result identical
+  across cases that were supposed to differ.
+
+*Verified: renders in the shipped accuracy-log template; doctor and build green.
+Reasoned: nothing — documentation.*
+
 ## [0.16.1] — 2026-08-20
 
 ### Added

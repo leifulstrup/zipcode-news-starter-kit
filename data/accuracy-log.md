@@ -15,6 +15,17 @@ After each issue publishes, pick **three claims** — deliberately, not randomly
 3. **One claim from a section whose rules you didn't write** — the place a blind
    spot hides.
 
+**Be most suspicious of a check whose result favours you.** You are grading your
+own publication, and "correct" is the convenient answer — so an inconvenient
+finding gets investigated and a convenient one gets accepted. Reverse that: when
+a claim checks out easily, spend the extra minute confirming you looked at the
+right figure in the right row on the right date. A field agent nearly recorded a
+clean result on a question about its own conduct because the command it used had
+silently failed and returned an empty answer — which reads exactly like a clean
+one. (Relatedly: never suppress stderr on a command whose output is your
+evidence. `2>/dev/null` turns "this failed" into "this found nothing", and those
+are opposite conclusions.)
+
 Follow each claim to its cited source and give a verdict:
 
 - **correct** — the source says what the issue says.
