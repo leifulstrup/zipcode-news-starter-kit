@@ -450,7 +450,12 @@ The word comes off the masthead when the accuracy record earns it, not on a sche
 <h2>What it is</h2>
 <div class="rule"></div>
 <p><b>${esc(cfg.siteName)}</b> is a weekly brief on <b>ZIP code ${esc(cfg.zip)}</b> — ${esc(cfg.city)}, ${esc(cfg.state)}.
-Standing coverage includes ${esc(beats.slice(0, -1).join(', ').toLowerCase())}${beats.length > 1 ? ', and ' + esc(beats[beats.length-1].toLowerCase()) : ''}.</p>
+Standing coverage includes ${esc(beats.slice(0, -1).join(', ').toLowerCase())}${beats.length > 1 ? ', and ' + esc(beats[beats.length-1].toLowerCase()) : ''}.
+<!-- NOTE TO THE PUBLISHER: this list comes from site.config.json "sections", which is a statement
+     of INTENT, not of sourcing. A field instance shipped a page promising two beats its own issue
+     said in print it had no source for. Eject this page (node build.mjs --eject-about) and name
+     only the beats you actually have sources for, then say plainly which you do not. -->
+</p>
 <p>It is written for <b>everyone in the ZIP code</b> — owners and renters, longtime residents and
 newcomers, families and people without children, commuters, retirees, and local business. Coverage
 is deliberately framed around what a change means for residents generally rather than for any one
@@ -512,6 +517,12 @@ scale — never about, or identifying, any individual household.</p>
 with the source cited beside it, <b>the source governs</b>. Past issues in the
 <a href="/archive/">archive</a> are kept as published and are not retroactively corrected or
 updated, so always check an issue's date before relying on it.</p>
+<p>Accuracy is checked after publication rather than before it: three claims from each issue are
+verified against the sources cited beside them and the result recorded. The word "Experimental"
+comes off the masthead only after eight consecutive issues with no wrong claim.</p>${cfg.contactEmail ? '' : `
+<p><b>There is currently no address for reporting an error.</b> Setting one up is outstanding.
+Until it exists, the honest position is that this publication expects mistakes and offers you no
+route to report one — which you should weigh when deciding how much to rely on it.</p>`}
 ${cfg.contactEmail ? `
 <h2>Suggestions and corrections</h2>
 <div class="rule"></div>
@@ -541,10 +552,46 @@ outlets named; this publication summarizes and links rather than reproducing the
 readers are encouraged to read the originals. Public datasets are used under their published
 terms.</p>
 </div>`;
+// The About page is an EDITORIAL artifact, not build output. It carries the
+// corrections policy, the privacy statement, the independence claim and the
+// not-advice disclaimer — the sentences a publication is judged on and, if it is
+// ever challenged, held to. Regenerating it every build means a publisher cannot
+// fix a sentence (the fix is overwritten on the next run), and the page silently
+// rewrites itself when unrelated config changes. The most durable prose on the
+// site was the only prose nobody owned.
+//
+// So: `node build.mjs --eject-about` writes the generated prose out ONCE as a
+// bare fragment — the same contract issues/ already uses — and from then on the
+// build uses your file and leaves it alone. Instances that never eject are
+// unaffected. (Design decision from the publisher; implementation prototyped by
+// the 90706 field instance, which also found that the un-ejected page promised
+// beats its own issue said it had no source for.)
+const ABOUT_FILE = path.join(ROOT, 'about.html');
+if (process.argv.includes('--eject-about')) {
+  if (existsSync(ABOUT_FILE)) {
+    console.error(`about.html already exists — refusing to overwrite your edits. Delete it first if you really want the generated version back.`);
+    process.exit(1);
+  }
+  writeFileSync(ABOUT_FILE, `<!-- Your About page. build.mjs wraps this fragment in the site chrome,
+     exactly as it does an issue: write the body only, no <html>, no nav, no footer.
+     Once this file exists the build NEVER regenerates it — it is yours to edit, and
+     that is the point. Say what is true of YOUR publication: name only the beats you
+     actually have sources for, and say plainly which you do not. -->
+` + aboutBody.trim() + '\n');
+  console.log('wrote about.html — the build will use it from now on and never regenerate it.');
+  console.log('Edit it freely; it is an editorial artifact, not build output.');
+  process.exit(0);
+}
+const usingOwnAbout = existsSync(ABOUT_FILE);
+const aboutSource = usingOwnAbout ? readFileSync(ABOUT_FILE, 'utf8') : aboutBody;
+
 mkdirSync(path.join(OUT, 'about'), { recursive: true });
 writeFileSync(path.join(OUT, 'about', 'index.html'),
   shell({ title: `About — ${NAME}`, desc: `How ${cfg.siteName} is made, its limitations, and its corrections policy`,
-          pagePath: '/about/', body: aboutBody }));
+          pagePath: '/about/', body: aboutSource }));
+console.log(usingOwnAbout
+  ? '  about: using your about.html (not regenerated)'
+  : '  about: generated — run `node build.mjs --eject-about` to take ownership of it');
 
 // 404
 writeFileSync(path.join(OUT, '404.html'),

@@ -17,6 +17,11 @@ config/
   sources.json          Host classification lists (see §3)
   privacy.json          Publisher/reader identity patterns the privacy gate blocks (see §4)
   feeds.json            Approved RSS/Atom feeds the optional daily digest watches (see §10)
+about.html              OPTIONAL. Your About page, once ejected — an editorial
+                        artifact you own, not build output. Same bare-fragment
+                        contract as an issue. If present, build.mjs uses it and
+                        NEVER regenerates it. Create with `node build.mjs
+                        --eject-about`.
 build.mjs               issues/ → public/  (site generator; the ONLY writer of public/)
 bin/                    Deterministic pipeline scripts (see §7 for CLIs)
 prompts/write-issue.md  The single editorial brief (both/all model paths read this)

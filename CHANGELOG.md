@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.14.0] — 2026-08-20
+
+### Changed
+- **The About page is now an editorial artifact you own, not build output.**
+  `node build.mjs --eject-about` writes the generated prose once as a bare
+  fragment — the same contract `issues/` already uses — and from then on the
+  build uses your file and never regenerates it. Instances that never eject are
+  unaffected.
+
+  The reason is sharper than convenience: that page carries the corrections
+  policy, the privacy statement, the independence claim and the not-advice
+  disclaimer — the sentences a publication is judged on and, if challenged, held
+  to. Regenerating it every build meant a publisher could not fix a sentence (the
+  fix was overwritten on the next run), and the page silently rewrote itself when
+  unrelated config changed. **The most durable prose on the site was the only
+  prose nobody owned.** (Publisher's design decision; prototyped by the 90706
+  field instance.)
+
+### Fixed
+- **The About page promised coverage the publication had told readers it could
+  not provide.** The beat list is built from `sections`, which is a statement of
+  intent, not of sourcing — a field instance shipped a page promising two beats
+  its own issue said in print it had no source for. The generated default now
+  carries a note to the publisher to name only sourced beats, and `/first-issue`
+  walks them through fixing it at ejection time.
+- **With no `contactEmail`, the entire corrections apparatus vanished.** The page
+  said errors are expected, that past issues are never retroactively corrected —
+  and then dropped the whole reporting block, leaving readers of a wrong issue no
+  route by which they could ever learn it was wrong. The kit's own doctrine is
+  that a gap is admitted in print, not deleted. It now keeps a Corrections
+  section that explains how accuracy is actually checked, states the eight-issue
+  bar, and says plainly that no reporting address exists yet.
+
+### Added
+- **A doctor check for the half-updated state that is otherwise invisible**: an
+  instance that owns `about.html` then merges a `build.mjs` without support for
+  it. The file survives, is silently ignored, the site quietly reverts to
+  generated prose, and every check stays green. Same shape as `--ours` dropping
+  config keys.
+
+*Verified: ejection writes the file and refuses to overwrite; an edit to
+`about.html` reaches `public/about/index.html` after a rebuild; the no-inbox page
+keeps its Corrections section and admits the missing route; the doctor check is
+inert without `about.html`, passes with a supporting build, and fails with a
+build lacking support (exit 1). Reasoned: nothing.*
+
 ## [0.13.3] — 2026-08-19
 
 ### Fixed

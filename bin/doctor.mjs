@@ -211,6 +211,28 @@ try {
     if (!ok) failures++;
   }
 
+  // The half-updated state that is otherwise INVISIBLE: an instance has taken
+  // ownership of its About page, then merges a build.mjs that does not know
+  // about.html exists. The file survives, is silently ignored, the site quietly
+  // reverts to generated prose, and every check stays green — the publisher finds
+  // out when they notice their own corrections have vanished from a page nobody
+  // looks at twice. Same shape as `--ours` dropping config keys. (90706 instance
+  // flagged this while prototyping the feature.)
+  if (ex(join(ROOT, 'about.html'))) {
+    const buildSrc = rf(join(ROOT, 'build.mjs'), 'utf8');
+    const ok = buildSrc.includes('ABOUT_FILE');
+    rows.push({
+      result: ok ? 'PASS' : 'FAIL',
+      case: 'about.html is actually used by the build',
+      detail: ok ? '' :
+        'about.html exists but build.mjs has no support for it — your edited About page is being ' +
+        'IGNORED and the site is serving generated prose. This is the shape a partial update ' +
+        'leaves behind: take the kit\'s build.mjs from a version >= 0.14.0, or your ownership of ' +
+        'that page is silently undone.',
+    });
+    if (!ok) failures++;
+  }
+
   // Placeholders left behind after /setup mean a half-configured instance.
   // Skipped on an unconfigured clone, where placeholders are correct.
   if (cfg.zip !== '00000') {

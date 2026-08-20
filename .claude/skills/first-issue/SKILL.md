@@ -71,6 +71,25 @@ If a gate fails: that is the system working. Fix the issue (not the gate) and
 re-run. Explain each failure to the user in one plain sentence — the gates are the
 kit's editorial promises made mechanical.
 
+## 3b. Take ownership of the About page
+
+Run `node build.mjs --eject-about` and read the result WITH the user. It writes
+`about.html` once; from then on the build uses it and never regenerates it.
+
+This matters more than it looks. That page carries the corrections policy, the
+privacy statement, the independence claim and the not-advice disclaimer — the
+sentences the publication will be held to. Two things to fix while you are both
+looking at it:
+
+- **The beat list comes from `sections`, which is an INTENT, not a claim about
+  sourcing.** A field instance shipped a page promising two beats its own issue
+  said, in print, it had no source for. Name only the beats they actually have
+  sources for, and say plainly which they do not.
+- **If there is no `contactEmail`, the page now says so** — that the publication
+  expects errors and offers no route to report one. That is honest and
+  uncomfortable, which is the point. If they would rather it not say that, the
+  fix is an inbox (`docs/FEEDBACK-INBOX.md`), not deleting the sentence.
+
 ## 4. Read it together
 
 Run `npm run serve` and have the user open the local URL. Then walk them through the

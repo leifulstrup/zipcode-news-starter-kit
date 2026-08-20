@@ -70,7 +70,8 @@ Two kinds of files exist in an instance:
 
 - **Theirs (never overwritten by an update):** `site.config.json`,
   `config/*.json`, `data/**` (registry, logs, facts, daily state), `issues/**`,
-  `addendum/**`, `wrangler.toml`, adapter files the instance wrote under
+  `addendum/**`, `about.html` (the publisher's own About page — editorial, never
+  regenerated, and the merge must not touch it), `wrangler.toml`, adapter files the instance wrote under
   `bin/adapters/` (anything that is not `index.mjs`, `README.md`, or a
   `_template-*`), and any cron lines in `.github/workflows/*.yml` that /setup or
   /enable-daily customized.
