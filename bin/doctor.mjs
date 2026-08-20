@@ -249,6 +249,23 @@ try {
     }
     rows.push({ result: ok ? 'PASS' : 'FAIL', case: 'about.html actually reaches the built page', detail });
     if (!ok) failures++;
+
+    // Ownership freezes the prose. That is the point of ejecting — and its cost,
+    // because kit corrections to the generated About text stop arriving. Make the
+    // drift visible without ever touching their file.
+    const stamped = Number((original.match(/about-template-rev:\s*(\d+)/) || [])[1] ?? 0);
+    const current = Number((rf(join(ROOT, 'build.mjs'), 'utf8')
+      .match(/ABOUT_TEMPLATE_REV\s*=\s*(\d+)/) || [])[1] ?? 0);
+    if (current > stamped) {
+      rows.push({
+        result: 'WARN',
+        case: 'about.html may be missing later kit corrections',
+        detail: `your about.html was ejected at About-prose revision ${stamped || 'unknown'}; the kit is ` +
+          `now at ${current}. The generated About text has been corrected since — read CHANGELOG.md for ` +
+          `what changed and port what applies, then update the "about-template-rev" comment at the top ` +
+          `of your file. Nothing has been changed for you; the page is yours.`,
+      });
+    }
   }
 
   // Placeholders left behind after /setup mean a half-configured instance.
@@ -323,7 +340,7 @@ if (remotes.length > 1) {
 const width = Math.max(...rows.map(r => r.case.length));
 console.log('\ndoctor — gate self-test against fixtures/\n');
 for (const r of rows)
-  console.log(`  ${r.result}  ${r.case.padEnd(width)}  ${r.detail}`);
+  console.log(`  ${r.result.padEnd(4)}  ${r.case.padEnd(width)}  ${r.detail}`);
 console.log('');
 
 if (failures) {

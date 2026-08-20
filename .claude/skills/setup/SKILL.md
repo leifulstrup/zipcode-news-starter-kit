@@ -111,7 +111,28 @@ config.
 
    If the user declines, an empty value is completely fine — the kit adapts and
    the gates will not require one. Never suggest their personal email.
-5. **Privacy — never skip this section.** Explain why first: the newsletter's
+5. **Affiliations — ask, and default to silence.** "Do you hold any position, job,
+   board seat, membership or business interest connected to what this publication
+   will cover — a city or county job, a school board, a neighborhood association
+   office, a business on a street it will write about?"
+
+   Explain why you are asking: **the kit will not claim independence on their
+   behalf.** Earlier versions printed "Independent and unaffiliated with any
+   government body, civic association, or the businesses mentioned" on every
+   page, automatically, without ever asking — which generates a false statement of
+   fact about a publisher who happens to sit on a school board, in the footer of
+   the page they would be judged on. Independence is exactly what a local
+   publication gets challenged on, so it is the last thing a stranger's software
+   should assert for them.
+
+   - Ties → write a plain one-line disclosure with them and set
+     `affiliationNote` (e.g. "The publisher serves on the Anytown Parks
+     Commission; items involving the commission are noted where they arise.").
+   - No ties → they may write the sentence themselves and mean it, or leave it
+     empty. **Empty is the default and is honest**: the page simply says nothing
+     about affiliation rather than asserting something nobody verified.
+
+6. **Privacy — never skip this section.** Explain why first: the newsletter's
    privacy gate blocks reader-identifying information, and it should also block the
    *publisher's own* identity so no run can ever leak it. Ask for:
    - names of household members that must never appear (→ `publisherNames`);

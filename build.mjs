@@ -247,8 +247,11 @@ ${cfg.contactEmail ? `  <p><b>Spotted a mistake, or a source we should be readin
   <a href="${mailtoHref()}">${esc(cfg.contactEmail)}</a>.
   Corrections and source suggestions improve future issues. <b>This is not a mailing list</b> — writing in does not subscribe you to
   anything and nothing is ever sent to you. Please don't send personal information about anyone.</p>
-` : ''}  <p>Independent and unaffiliated with any government body, civic association, or the businesses mentioned.</p>
-</div>`;
+` : `  <p><b>Spotted a mistake?</b> There is no address for reporting one yet — setting one up is
+  outstanding, and until it exists this publication expects errors and offers you no route to
+  report them.</p>
+`}${cfg.affiliationNote ? `  <p>${esc(cfg.affiliationNote)}</p>
+` : ''}</div>`;
 
 function pageFromIssue(m, { pagePath, isLatest }) {
   let html = m.html;
@@ -459,8 +462,12 @@ Standing coverage includes ${esc(beats.slice(0, -1).join(', ').toLowerCase())}${
 newcomers, families and people without children, commuters, retirees, and local business. Coverage
 is deliberately framed around what a change means for residents generally rather than for any one
 group; where an item genuinely affects only one of them, the writing says so rather than assuming
-it of everyone. It is independent, free, carries no advertising, and is unaffiliated with any
-government body, civic association, or business mentioned.</p>
+it of everyone. It is free and carries no advertising.</p>
+${cfg.affiliationNote ? `<p>${esc(cfg.affiliationNote)}</p>` : `<!-- NOTE TO THE PUBLISHER: nothing here states your affiliations, because the kit
+     cannot know them and will not vouch for you. If you hold office, sit on a board, work
+     for a body this publication covers, or own a business on a street it writes about, say
+     so — set "affiliationNote" in site.config.json and it appears here and in the footer.
+     If you have no such ties and want to say so, write that sentence yourself and mean it. -->`}
 
 <h2>How it is made</h2>
 <div class="rule"></div>
@@ -563,13 +570,23 @@ terms.</p>
 // unaffected. (Design decision from the publisher; implementation prototyped by
 // the 90706 field instance, which also found that the un-ejected page promised
 // beats its own issue said it had no source for.)
+// Bump this whenever the generated About prose changes in a way a publisher who
+// already ejected would want to know about. It is the version of the PROSE, not
+// of the kit: doctor compares it against the stamp in an ejected about.html and
+// tells the publisher to review, without ever touching their file. Ownership is
+// the point of ejecting; staleness is its cost, and the fix is to make the drift
+// legible rather than to un-own the page. (90706 field instance, which ejected at
+// v0.14.0 and then sat for hours on privacy claims the kit had already corrected,
+// with everything green and nothing anywhere saying so.)
+const ABOUT_TEMPLATE_REV = 2;   // 2 = v0.15.0 restated privacy claims as intent; v0.16.0 removed the affiliation claim
 const ABOUT_FILE = path.join(ROOT, 'about.html');
 if (process.argv.includes('--eject-about')) {
   if (existsSync(ABOUT_FILE)) {
     console.error(`about.html already exists — refusing to overwrite your edits. Delete it first if you really want the generated version back.`);
     process.exit(1);
   }
-  writeFileSync(ABOUT_FILE, `<!-- Your About page. build.mjs wraps this fragment in the site chrome,
+  writeFileSync(ABOUT_FILE, `<!-- about-template-rev: ${ABOUT_TEMPLATE_REV} -->
+<!-- Your About page. build.mjs wraps this fragment in the site chrome,
      exactly as it does an issue: write the body only, no <html>, no nav, no footer.
      Once this file exists the build NEVER regenerates it — it is yours to edit, and
      that is the point. Say what is true of YOUR publication: name only the beats you

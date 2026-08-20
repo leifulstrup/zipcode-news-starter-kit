@@ -12,6 +12,7 @@
   "domain": "",
   "workerName": "zipcode-news-00000",
   "contactEmail": "",
+  "affiliationNote": "",
   "publishDay": "Friday",
   "cronUtc": "0 20 * * 5",
   "volume": 1,

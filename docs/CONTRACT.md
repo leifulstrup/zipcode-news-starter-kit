@@ -71,6 +71,7 @@ address reads this file — no script hardcodes any of them.
   "domain": "",
   "workerName": "zipcode-news-00000",
   "contactEmail": "",
+  "affiliationNote": "",
   "publishDay": "Friday",
   "cronUtc": "0 20 * * 5",
   "volume": 1,
@@ -101,6 +102,11 @@ Rules:
   on their explicit approval.
 - `domain: ""` means the site serves from `<workerName>.<account>.workers.dev` (free).
   Setting a domain changes only links/canonical URLs — deploy mechanics are identical.
+- `affiliationNote: ""` means the site says **nothing** about the publisher's
+  affiliations — the honest default, because the kit cannot know them. A
+  publisher with ties writes a one-line disclosure here and it appears in the
+  footer and the About page. The kit never asserts independence on anyone's
+  behalf: that is a claim about a person, not about the software.
 - `contactEmail: ""` means the issue carries no contact route and the gates do not
   require one. A non-empty value must be a mailbox a human (or supervised agent) reads.
 - `geographyNote` is the local equivalent of "police districts ≠ ZIP boundaries" —
