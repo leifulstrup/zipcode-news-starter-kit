@@ -238,6 +238,27 @@ This one is worth more than most of what is above it, because it does not requir
 knowing what the bug is. It only requires noticing that two cases which should
 have disagreed did not.
 
+
+**Read the failure line, not the number.**
+An exit code tells you *that* something failed. It does not tell you *what*
+failed, and when you are testing a check, those are different questions. Three
+instances between two instances:
+
+- Reading `$?` after piping the command to `head` — which reports the exit status
+  of `head`, not of the thing under test. Twice, on two different gates.
+- Reading a correct exit 1 as "the guard I just wrote is broken", when it was an
+  unrelated size-floor check firing accurately on an undersized test fixture. A
+  few kilobytes either way and the same run would have produced "works" or
+  "broken", and neither conclusion would have been about the guard.
+
+So when a check fails during a test of that check: **confirm the failure you got
+is about the thing you were testing.** The message names the problem; the number
+only says there was one. This is the same discipline as the negative control
+above, applied to the positive case — and it is why every gate in this kit is
+required to say what to do about a failure rather than merely fail. A gate that
+prints only an exit code cannot be tested, because you cannot tell its failure
+from anyone else's.
+
 **On the machinery.**
 `issues/` holds the **bare** issue; `build.mjs` adds the chrome — saving a built
 page back into `issues/` double-wraps it. The writing agent runs unattended: it

@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.16.9] — 2026-08-21
+
+### Added
+- **"Read the failure line, not the number"** — a standing rule in Part 1, with
+  three field instances behind it. An exit code says *that* something failed, not
+  *what*, and when you are testing a check those are different questions. Twice
+  an exit status was read after piping to `head` (which reports `head`'s status,
+  not the command's); once a correct exit 1 was nearly recorded as "the guard I
+  just wrote is broken" when it was an unrelated size-floor check firing
+  accurately on an undersized fixture — a few kilobytes either way and the same
+  run would have yielded "works" or "broken", neither conclusion being about the
+  guard.
+
+  It is the negative-control rule applied to the positive case, and it is the
+  reason every gate in this kit must say what to do about a failure rather than
+  merely fail: **a gate that prints only an exit code cannot be tested, because
+  you cannot tell its failure from anyone else's.**
+
+*Verified: renders in the shipped lessons file; doctor green. Reasoned: nothing —
+documentation.*
+
 ## [0.16.8] — 2026-08-21
 
 ### Fixed
