@@ -13,7 +13,15 @@ roughly half an hour of research plus their reading time.
 
 ## 1. Fetch
 
-Pick today's date as `<WEEK>`. If adapters exist in `bin/adapters/`, run:
+**Date the issue to the most recent `publishDay`, not to today** — run
+`node bin/check-published.mjs --print-expected-week` and use what it prints as
+`<WEEK>`. The weekly workflow dates issues by its cron day, so matching that
+makes this calibration issue indistinguishable from what the pipeline produces.
+Dating it "today" instead has two visible consequences: the site's footer says
+"published weekly on <publishDay>s" above an issue dated a Tuesday, and the
+`not-published` watchdog sees no issue on the expected day. (Both were found in
+the field; the watchdog now recognises the state, but matching the real cadence
+is the better artifact either way.) If adapters exist in `bin/adapters/`, run:
 
 ```
 node bin/fetch-data.mjs --week <WEEK>

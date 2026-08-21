@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.16.8] — 2026-08-21
+
+### Fixed
+- **The `not-published` watchdog false-alarmed on roughly six of every seven new
+  instances, with a diagnosis that was actively wrong.** `/first-issue` said to
+  date the calibration issue *today*, and today is `publishDay` one day in seven.
+  The watchdog then looked for an issue on the most recent publishDay, found
+  none, and reported: *"the scheduled run never fired… or it fired and died
+  before the commit step."* Neither had happened. The truth was "no scheduled run
+  has occurred yet", which needs no action — and the alarm arrives on day one,
+  in the window where a new publisher is least able to distinguish a real alert
+  from noise, **about the alerting system that is the kit's entire safety net.**
+
+  The existing fresh-clone guard states the principle it missed, in its own
+  comment: *a red X on day one teaches people to ignore red X's.* It
+  distinguished "no issues" from "has issues" but not "has issues, none from a
+  scheduled run" — precisely the state the kit's own onboarding produces. The
+  check now recognises that state and exits 0 explaining it.
+
+  Verified in four states: the `/first-issue` state exits 0 with guidance; a
+  publishDay-dated issue lets the real check run and pass; a genuinely missed
+  week still alarms (exit 1); a fresh clone still exits 0.
+- **`/first-issue` now dates the calibration issue to the most recent
+  `publishDay`** rather than to today, matching how the weekly workflow dates
+  issues. That removes the mismatch at its source — the footer no longer says
+  "published weekly on Fridays" above an issue dated a Tuesday — and makes the
+  calibration artifact indistinguishable from what the pipeline produces.
+
+*Verified: all four watchdog states run here, unmodified, with exit codes
+checked directly rather than through a pipe. Reasoned: that
+`publication-check.yml` would open and email an issue in the false-alarm state —
+read from the workflow's `if` condition; nobody has fired that workflow, as
+docs/TESTING.md records.*
+
 ## [0.16.7] — 2026-08-20
 
 ### Added

@@ -60,11 +60,37 @@ const base = arg('--base');
    A kit with no issues at all has nothing to have missed. Onboarding guidance,
    not an error — a red X on day one teaches people to ignore red X's. */
 const issuesDir = join(ROOT, 'issues');
-const anyIssue = existsSync(issuesDir) && readdirSync(issuesDir).some(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f));
-if (!anyIssue) {
+const issueDates = existsSync(issuesDir)
+  ? readdirSync(issuesDir).filter(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f)).map(f => f.slice(0, 10))
+  : [];
+if (issueDates.length === 0) {
   console.log('check-published: no issues exist yet — nothing to check.');
   console.log('This is a fresh kit. Publish your first issue (see /first-issue or docs/),');
   console.log(`and from then on this check expects one every ${config.publishDay}.`);
+  process.exit(0);
+}
+
+/* ---------- has issues, but none from a scheduled run ----------
+   The guard above distinguished "fresh kit" from "has issues". It did not
+   distinguish "has issues, but none produced by the weekly cron" — which is the
+   state /first-issue leaves EVERY instance in, because it says to date the
+   calibration issue today, and today is publishDay one day in seven.
+
+   In that state the check looked for an issue on the most recent publishDay,
+   found none, and diagnosed a failed run: "the scheduled run never fired, or it
+   fired and died before the commit step." Neither was true. The truth was
+   "no scheduled run has happened yet", which needs no action at all — and the
+   alarm arrives on day one, in the window where a new publisher is least able
+   to tell a real alert from noise, about the alerting system that is the kit's
+   whole safety net. The guard above states the principle it missed: a red X on
+   day one teaches people to ignore red X's. (90706 field instance.) */
+const targetDow = WEEKDAYS[config.publishDay] ?? 5;
+const anyScheduled = issueDates.some(d => new Date(`${d}T12:00:00Z`).getUTCDay() === targetDow);
+if (!anyScheduled) {
+  console.log(`check-published: ${issueDates.length} issue(s) exist, but none is dated on a ${config.publishDay}.`);
+  console.log('No scheduled run has published yet — a locally written issue is dated the day it was');
+  console.log(`written. Nothing is wrong, and nothing is missing. From the first ${config.publishDay} the`);
+  console.log('weekly workflow publishes, this check starts expecting one every week.');
   process.exit(0);
 }
 
