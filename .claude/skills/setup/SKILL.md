@@ -83,6 +83,9 @@ config.
    (e.g. "12345 News") as the convention, but any name works. Note that
    "(Experimental)" will be appended automatically until the accuracy record earns
    its removal — explain that in one sentence and that it is not optional styling.
+   Say also that taking it off is **theirs to do, by hand**: the gate refuses to
+   publish an issue that drops the label, and refuses a removal with nobody's name
+   on it, so the publication cannot decide it has graduated.
 3. **Timezone and publish day.** Default Friday. Compute the `cronUtc` line from
    their timezone + day (a late-afternoon local publish is the convention). Tell
    them GitHub cron ignores daylight saving, so the publish hour will drift by one
@@ -217,6 +220,13 @@ With approvals in hand:
    (`zipcode-news-<zip>`), leave `experimental: true`, `volume: 1`, keep the default
    sections and colors unless the user asked to change them, `geographyNote: ""`
    (filled by /find-sources).
+
+   Leave `data/experimental-status.json` exactly as it ships. It is the control the
+   masthead label is bound by, and `bin/verify-issue.mjs` §7 reads it, not
+   `site.config.json`. Set `labelAdoptedFrom` **only** if this instance is adopting the
+   kit with issues already published under an unlabelled name — it exempts those dated
+   issues by a recorded date. A new publication leaves it `null`, which checks every
+   issue.
 
    Also resolve and store the **jurisdiction handles** — `stateCode` (2-letter),
    `countyFips` (5-digit), `placeFips` (7-digit, or `""` for unincorporated

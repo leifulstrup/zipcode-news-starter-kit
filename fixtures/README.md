@@ -18,6 +18,7 @@ structural check once silently skipped the one broken item it existed to catch.
 | `bad-privacy-leak.html` | A coordinate pair, second-person home framing, and a personal email → privacy-scan must FAIL. |
 | `bad-double-wrapped.html` | Site chrome saved back into a bare issue → verify must FAIL. |
 | `bad-missing-sources.html` | Per-section source blocks deleted → verify must FAIL. |
+| `bad-masthead-unlabelled.html` | "(Experimental)" stripped from the masthead while `data/experimental-status.json` still requires it → verify must FAIL. |
 
 The bad fixtures are derived from `good-issue.html` with one focused mutation each,
 so a doctor failure points at exactly one gate. If you change a gate, add a fixture

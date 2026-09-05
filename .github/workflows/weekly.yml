@@ -383,16 +383,20 @@ jobs:
       # prompt is a request; this is the check. Research/ (if present) is included
       # because quietly editing the reasoning behind a rule has the same effect as
       # editing the rule.
-      - name: The agent must not have modified the rubric
+      - name: The agent must not have modified the rubric or the masthead control
         run: |
-          DIRTY=$(git status --porcelain QA-QC Research 2>/dev/null || true)
+          # data/experimental-status.json controls the masthead. A run that could edit it
+          # could retire "(Experimental)" on its own, which is the publisher's decision
+          # and not a conclusion a run may draw from the accuracy log.
+          DIRTY=$(git status --porcelain QA-QC Research data/experimental-status.json 2>/dev/null || true)
           if [ -n "$DIRTY" ]; then
-            echo "::error::This run modified files under QA-QC/ or Research/. The agent is judged"
-            echo "::error::against those and must never write to them. Nothing will be committed."
+            echo "::error::This run modified QA-QC/, Research/, or the masthead control file."
+            echo "::error::The agent is judged against those and must never write to them."
+            echo "::error::Nothing will be committed."
             echo "$DIRTY"
             exit 1
           fi
-          echo "::notice::QA-QC/ and Research/ untouched by this run"
+          echo "::notice::QA-QC/, Research/ and the masthead control untouched by this run"
 
       - name: Commit
         if: ${{ github.event.inputs.dry_run != 'true' }}

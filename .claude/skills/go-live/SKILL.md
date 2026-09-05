@@ -138,7 +138,10 @@ Explain the standing machinery in plain language (details: `docs/OPERATIONS.md`)
 
 Their weekly human habit — the one thing that cannot be automated: the ~10-minute
 accuracy check, three claims per issue into `data/accuracy-log.md`. Eight clean
-consecutive issues is what earns "(Experimental)" off the masthead. And when they
+consecutive issues is what *earns* "(Experimental)" off the masthead — it does not
+take it off. That is theirs to do, by hand, following `howToRemoveTheLabel` in
+`data/experimental-status.json`; until they do, the gate fails any issue that drops
+the label, and fails a removal that carries no name and date. And when they
 hear of a new source worth adding: `/add-source`.
 
 ## 5. Close out

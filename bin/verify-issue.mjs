@@ -411,6 +411,60 @@ if (citedCases.size) {
   }
 }
 
+/* ---------- 7. the masthead is not the agent's to change ---------- */
+// "(Experimental)" is part of the publication's name, and taking it off is a change to
+// how the paper represents itself to its readers. The accuracy record is the EVIDENCE
+// for that decision (docs/EVALUATION.md); it is not the decision.
+//
+// This gate exists because CONTRACT §2 — "no agent or automated process flips it" — is a
+// rule, not a mechanism. The agent has repo-wide Write and Edit, it reads
+// data/accuracy-log.md, and it could reasonably conclude the bar had been met and edit
+// site.config.json accordingly. A threshold written down is an instruction to whoever
+// reads it, including the agent, so the enforcement has to be a gate rather than a
+// sentence in a brief. bin/smoke-test.mjs does check the live masthead, but it runs
+// AFTER publication and reports the result as a site failure — the right backstop, the
+// wrong first line.
+//
+// Lifted from the 20015.news reference instance, where the publisher pointed out that the
+// criterion as written would fire by itself.
+
+const statusPath = join(ROOT, 'data', 'experimental-status.json');
+if (existsSync(statusPath)) {
+  let status = null;
+  try { status = JSON.parse(readFileSync(statusPath, 'utf8')); }
+  catch (err) {
+    fatal.push(`data/experimental-status.json is not valid JSON (${err.message}). Refusing to publish ` +
+      `while the masthead control is unreadable — a control nobody can read is not a control.`);
+  }
+
+  // An instance that published before adopting the name exempts those issues by a RECORDED
+  // date, never a silent pass. null (the default) means every issue is checked.
+  const dated   = week ?? (basename(issuePath).match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? null);
+  const adopted = status?.labelAdoptedFrom || null;
+
+  if (adopted && dated && dated < adopted) {
+    warn.push(`${dated} predates the "(Experimental)" name (adopted ${adopted} per ` +
+      `data/experimental-status.json), so the masthead check is skipped for this issue. Adding the ` +
+      `label to an archived issue is a disclosure repair, not a claim edit — a publisher's call, not a run's.`);
+  } else if (status?.experimental === true) {
+    need(/\(Experimental\)/.test(contentHtml),
+      `The masthead does not say "(Experimental)" but data/experimental-status.json still has ` +
+      `experimental: true. Removing that label is the publisher's decision, made by hand in a human ` +
+      `commit — not something a run may infer from the accuracy log. See howToRemoveTheLabel in that file.`);
+    // Catch the flip at its source, so the message names the file that was edited.
+    need(cfg.experimental !== false,
+      `site.config.json has experimental: false while data/experimental-status.json still has ` +
+      `experimental: true. The control file is the authority: change it, by hand, with approvedBy and ` +
+      `approvedOn filled in — or restore site.config.json to true.`);
+  } else if (status && status.experimental === false) {
+    // Turning it off is allowed. Anonymously and silently is not.
+    need(!!status.approvedBy && !!status.approvedOn,
+      `data/experimental-status.json has experimental: false but no approvedBy/approvedOn. The label ` +
+      `may only come off by a recorded human decision; an unattributed change is indistinguishable ` +
+      `from the agent removing it.`);
+  }
+}
+
 /* ---------- report ---------- */
 console.log(`verify ${label} (${issuePath})`);
 console.log(`  sections with sources: ${srcBlocks} · citations: ${cites} · front-page items: ${fpH}`);

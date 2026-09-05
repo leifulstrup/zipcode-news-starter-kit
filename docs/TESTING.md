@@ -164,6 +164,23 @@ obscured.
 **Discovery dry-runs** (no instance): rural Maine (04543), suburban Illinois
 (60558), and Springfield Missouri (65804) as a deliberate name-collision case.
 
+**ZIP 20015 (Chevy Chase DC)** — the live reference instance the kit was extracted
+from, maintained by a separate session and coordinating through
+`docs/KIT-COORDINATION.md` there. It is the only instance that publishes. The
+masthead control (`data/experimental-status.json` + verify §7 + the workflow tamper
+guard) was **built and field-proven there first**, after the publisher pointed out
+that the removal criterion as written would fire by itself; the kit's version is a
+port. *Verified in the kit, by the maintainer session, against fixtures rather than
+a live run:* all seven branches of the gate — label stripped from the masthead
+(fatal), `site.config.json` flipped while the control still says true (fatal),
+`experimental: false` with no approver (fatal), the same with `approvedBy` and
+`approvedOn` present (passes), an issue dated before `labelAdoptedFrom` (warns and
+skips), an issue dated after it (fatal), and an unparseable control file (fatal).
+Each was run as a negative control with the failure line read, not the exit code
+alone. *Not verified:* the tamper guard inside a real GitHub Actions run — only its
+`git status --porcelain` pathspec locally, which fires on a staged edit and stays
+silent on an untouched file.
+
 **Never executed by anyone, as of v0.16.5:**
 
 - `bin/adapters/_template-socrata.mjs`. **Both** instances are in Los Angeles

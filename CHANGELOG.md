@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.17.0] — 2026-09-05
+
+### Added
+- **The "(Experimental)" label is now a control the run cannot reach, not a
+  sentence asking it not to.** CONTRACT §2 said the label "becomes eligible for
+  removal only by the accuracy-log criterion… and even then, **no agent or
+  automated process flips it**." That is a rule, and the kit had no mechanism
+  behind it: one line in `bin/lib/config.mjs` rendered the label from
+  `site.config.json`, and nothing checked that anyone was entitled to change it.
+  The weekly agent has repo-wide Write and Edit, reads `data/accuracy-log.md`,
+  and could reasonably conclude the bar had been met and edit the config itself.
+
+  Three pieces, ported from the 20015.news reference instance, where the
+  publisher pointed out that the criterion as written would fire by itself:
+
+  - **`data/experimental-status.json`** — the authority. Carries `experimental`,
+    `approvedBy` / `approvedOn` (both null), a `labelAdoptedFrom` date (null by
+    default, so every issue is checked), `howToRemoveTheLabel`, and — because the
+    reason matters more than the rule — `whyItIsAFileAndNotAJudgement`.
+  - **`bin/verify-issue.mjs` §7** — fails an issue whose masthead drops the label
+    while the control says `true`; fails a `site.config.json` flipped out from
+    under the control, naming the file that was edited; fails a flip to `false`
+    with no `approvedBy`/`approvedOn`, because an unattributed removal is
+    indistinguishable from the agent doing it; and fails an unreadable control
+    file, since a control nobody can read is not a control. Issues dated before
+    `labelAdoptedFrom` are exempted by a **recorded date and a printed warning**
+    rather than a silent pass.
+  - **The weekly tamper guard** — `data/experimental-status.json` joins `QA-QC/`
+    and `Research/` in the porcelain check, so a run cannot edit the control it
+    is bound by.
+
+  `bin/smoke-test.mjs` already checked the live masthead; it runs an hour after
+  publication and reports a site failure, which is the right backstop and the
+  wrong first line.
+
+  The generalisable point, and the reason this is in the CONTRACT and not only in
+  the code: **a threshold written down is an instruction to whoever reads it,
+  including the agent.** Any criterion phrased "X happens after N" has to say who
+  does the happening, and the enforcement has to be a gate rather than a sentence
+  in a brief.
+
+*Verified: all seven branches of the gate driven as negative controls against
+fixtures — label stripped (fatal), config flipped (fatal), unattributed removal
+(fatal), attributed removal (passes), pre-adoption date (warns and skips),
+post-adoption date (fatal), corrupt control file (fatal) — with the failure line
+read rather than the exit code alone; the good fixture still passes unchanged;
+workflow YAML re-parses; the guard's pathspec fires on a staged edit and stays
+silent on an untouched file. Reasoned: the tamper guard's behaviour inside a real
+GitHub Actions run, which no instance has yet exercised.*
+
 ## [0.16.9] — 2026-08-21
 
 ### Added

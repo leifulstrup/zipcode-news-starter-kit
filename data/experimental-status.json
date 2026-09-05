@@ -1,0 +1,23 @@
+{
+  "experimental": true,
+  "removalRequiresHumanApproval": true,
+  "approvedBy": null,
+  "approvedOn": null,
+  "labelAdoptedFrom": null,
+
+  "whatThisControls": "Whether '(Experimental)' must appear in the masthead. While `experimental` is true here, bin/verify-issue.mjs FAILS any issue whose masthead omits the label, and FAILS if site.config.json has been flipped to experimental: false while this file still says true. The weekly workflow additionally fails if this file was modified during a run.",
+
+  "whyItIsAFileAndNotAJudgement": "The accuracy record in data/accuracy-log.md is the EVIDENCE for removing the label. It is not the DECISION. The decision changes how the publication represents itself to its readers, and it belongs to the publisher alone. Without this file the weekly agent — which has repo-wide write access, reads the accuracy log, and could reasonably conclude the bar had been met — could edit site.config.json and change the masthead on its own. That is the judged deciding it has graduated. CONTRACT §2 says no agent flips this; that sentence is an instruction to whoever reads it, including the agent. This file is the gate.",
+
+  "labelAdoptedFromNote": "null means every issue is checked, which is the right default for a publication that carried the label from its first edition. Set it to a YYYY-MM-DD date only if this instance published issues BEFORE adopting the '(Experimental)' name; issues dated earlier are then exempt by a recorded date rather than a silent pass, and the gate says so in a warning. Whether to add the label to those archived issues is a publisher's decision — it is a disclosure repair rather than a claim edit, so the no-retroactive-edits rule does not forbid it.",
+
+  "howToRemoveTheLabel": [
+    "1. Confirm the record in data/accuracy-log.md: eight consecutive issues, no wrong claim, no more than one misleading claim each. See docs/EVALUATION.md, 'The bar for removing (Experimental)'.",
+    "2. Confirm at least one retrospective pass in data/source-reliability.md, with the drift of the lead figures measured.",
+    "3. Decide, as the publisher, that the two questions the label holds open — is it useful, is it accurate enough to be worth reading — have been answered by readers and by the record, not by the machinery.",
+    "4. Set `experimental` to false in BOTH this file and site.config.json, and fill in `approvedBy` and `approvedOn` here BY HAND, in a commit made by a human. verify-issue.mjs fails an unattributed flip, because a removal with no name and date attached is indistinguishable from the agent doing it.",
+    "5. Update bin/smoke-test.mjs if it asserts the live masthead still says Experimental."
+  ],
+
+  "notEnough": "A clean eight-issue run is necessary and not sufficient. The accuracy log measures whether specific claims were true. It cannot measure what was left out, whether the brief is useful to anyone, or whether the model's tilt toward a tidy narrative has been showing. Those are the things the label is actually holding open."
+}

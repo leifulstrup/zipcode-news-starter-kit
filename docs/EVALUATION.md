@@ -79,6 +79,15 @@ claim per issue**, accuracy log public, plus at least one retrospective pass wit
 the lead figures' drift measured. Eight weeks is long enough to cross a holiday
 lull — the exact condition under which a thin week tempts a publication to reach.
 
+**That record is the evidence, not the decision.** Taking the label off changes how
+the publication represents itself to its readers, and it belongs to the publisher.
+The distinction is enforced rather than requested: `data/experimental-status.json`
+holds the control, `bin/verify-issue.mjs` §7 refuses to publish an issue whose
+masthead drops the label while that file still says `true`, and it refuses a flip to
+`false` that carries no `approvedBy`/`approvedOn`. `howToRemoveTheLabel` in that file
+is the checklist. `bin/smoke-test.mjs` still checks the live masthead afterwards — the
+right backstop, but an hour too late to be the first line.
+
 ## Liveness is a separate axis
 
 The layers above grade issues that exist; an unpublished week scores no worse than a

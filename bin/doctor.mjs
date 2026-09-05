@@ -74,6 +74,22 @@ const CASES = [
     expectExit: 1,
     expectMessage: /Sources for this section/i,
   },
+  {
+    // The masthead control (verify-issue §7). This covers the branch that matters
+    // most — an issue published without "(Experimental)" while the control still
+    // requires it — using a fixture, like every other case here.
+    //
+    // The other three branches (site.config.json flipped out from under the control,
+    // a removal with no approvedBy/approvedOn, an unparseable control file) are NOT
+    // self-tested, deliberately: they can only be exercised by writing to
+    // data/experimental-status.json, and a test harness that mutates the control file
+    // is exactly the access the control exists to deny. They were driven by hand as
+    // negative controls at v0.17.0 — see that CHANGELOG entry and docs/TESTING.md.
+    name: 'verify rejects an issue whose masthead drops "(Experimental)"',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-masthead-unlabelled.html'],
+    expectExit: 1,
+    expectMessage: /masthead does not say "\(Experimental\)"/i,
+  },
 ];
 
 let failures = 0;

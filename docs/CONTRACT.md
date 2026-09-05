@@ -100,6 +100,18 @@ Rules:
   and even then, **no agent or automated process flips it**. When the bar is met,
   propose the change to the publisher with the evidence; edit `experimental` only
   on their explicit approval.
+
+  That paragraph is a rule, and a threshold written down is an instruction to whoever
+  reads it — including the agent, which has repo-wide write access and reads the
+  accuracy log. So the rule is also a **mechanism**, in `data/experimental-status.json`:
+  that file is the authority, `site.config.json` is only what gets rendered, and
+  `bin/verify-issue.mjs` §7 fails an issue whose masthead drops the label, fails a
+  `site.config.json` flipped out from under the control file, and fails a removal with
+  no `approvedBy`/`approvedOn` attached — because an unattributed removal is
+  indistinguishable from the agent doing it. The weekly workflow separately fails any
+  run that modified the control file. **Any criterion phrased "X happens after N" has to
+  say who does the happening, and the enforcement has to be a gate rather than a
+  sentence in a brief.**
 - `domain: ""` means the site serves from `<workerName>.<account>.workers.dev` (free).
   Setting a domain changes only links/canonical URLs — deploy mechanics are identical.
 - `affiliationNote: ""` means the site says **nothing** about the publisher's
