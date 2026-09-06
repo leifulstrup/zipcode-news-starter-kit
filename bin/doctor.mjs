@@ -19,6 +19,7 @@
  * after cloning, to prove the kit works on your machine.
  */
 import { spawnSync, execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -73,6 +74,31 @@ const CASES = [
     cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-missing-sources.html'],
     expectExit: 1,
     expectMessage: /Sources for this section/i,
+  },
+  {
+    // A window that had not closed when it was measured. Not a lag problem — the facts
+    // file's own queriedAt predates its own window end, so part of the week had not
+    // happened yet. The reference instance published a superlative off exactly this
+    // shape, from feeds with no lag at all (their lesson 197).
+    name: 'verify rejects a facts window that had not closed when it was queried',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/good-issue.html',
+          '--facts', 'fixtures/bad-future-window.facts.json'],
+    expectExit: 1,
+    expectMessage: /had not happened yet/i,
+  },
+  {
+    // A POSITIVE fixture, and the only one here that guards a NUMBER rather than a
+    // structure. A front page carrying exactly FP_MIN items must publish.
+    //
+    // Every other case in this file is a negative control, and negative controls cannot
+    // catch a gate drifting away from the brief: they prove bad input fails, never that
+    // permitted input still passes. The reference instance lost exactly this — it lowered
+    // one of two front-page floors, the other kept rejecting the count the brief now
+    // allowed, and the writer padded the issue to satisfy it (their lesson 198). A
+    // fixture at the boundary would have gone red the day the floors disagreed.
+    name: 'verify accepts a front page carrying exactly the minimum items',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/ok-min-frontpage.html'],
+    expectExit: 0,
   },
   {
     // The masthead control (verify-issue §7). This covers the branch that matters
@@ -354,6 +380,41 @@ if (remotes.length > 1) {
 }
 
 const width = Math.max(...rows.map(r => r.case.length));
+// A version restated in prose drifts from the version in the file. This README carried
+// "Version 0.16.9" over a package.json saying 0.17.0 — a full release behind, and nothing
+// announced it, because a description of state kept separately from the state goes stale
+// silently. Same shape as a prompt restating a gate's word list. The fix is to keep ONE
+// authority (package.json) and check that everything pointing at it still agrees.
+{
+  const pkgVersion = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+  const changelog  = readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8');
+  const readme     = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const problems   = [];
+
+  if (!changelog.includes(`## [${pkgVersion}]`)) {
+    problems.push(`CHANGELOG.md has no "## [${pkgVersion}]" entry for the version in package.json`);
+  }
+  // Prose must not restate the number. Pointing at package.json or the changelog is fine.
+  const restated = readme.match(/\bVersion\s+v?\d+\.\d+\.\d+/i);
+  if (restated) {
+    problems.push(`README.md restates a version ("${restated[0]}") instead of pointing at package.json — ` +
+      `it will drift, and the drift is silent`);
+  }
+  // The tag is advisory: it legitimately lags between the version bump and the release.
+  const latestTag = git(['describe', '--tags', '--abbrev=0']);
+  const tagNote = latestTag && latestTag !== `v${pkgVersion}`
+    ? ` (latest tag ${latestTag} — expected once this version is released)` : '';
+
+  if (problems.length) failures++;
+  rows.push({
+    result: problems.length ? 'FAIL' : 'PASS',
+    case: 'the version agrees everywhere it appears',
+    detail: problems.length
+      ? problems.join('; ') + '. Keep package.json as the single authority.'
+      : `${pkgVersion}${tagNote}`,
+  });
+}
+
 console.log('\ndoctor — gate self-test against fixtures/\n');
 for (const r of rows)
   console.log(`  ${r.result.padEnd(4)}  ${r.case.padEnd(width)}  ${r.detail}`);

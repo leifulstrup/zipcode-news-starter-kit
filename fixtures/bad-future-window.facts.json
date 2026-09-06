@@ -1,0 +1,13 @@
+{
+  "week": "2026-09-11",
+  "generatedFor": "00000 News",
+  "generator": "bin/fetch-data.mjs",
+  "zip": "00000",
+  "geographyNote": null,
+  "queriedAt": "2026-09-05T13:00:00Z",
+  "errors": [],
+  "notes": [
+    "FIXTURE: a seven-day window ending 2026-09-11, queried on 2026-09-05. Six of those days had not happened when the data was fetched. Every figure covers about two days and every comparison against a full-week baseline understates it. verify-issue.mjs section 8 must FAIL on this."
+  ],
+  "agentRules": []
+}

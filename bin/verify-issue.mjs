@@ -82,9 +82,24 @@ want(visibleUrls >= 10,
 // still used below for the CSS-leak check, which is ABOUT the stylesheet.)
 const contentHtml = html.replace(/<style[\s\S]*?<\/style>/gi, ' ')
                         .replace(/<script[\s\S]*?<\/script>/gi, ' ');
+// ONE constant, TWO consumers. The front-page count is checked twice in this file —
+// here against <p class="fp-h"> headlines, and ~50 lines below against .fp-item blocks.
+// They are different markers over the same structure, so each is internally consistent
+// and they can still disagree. The reference instance lowered ONE of its two floors to
+// let a quiet week run two items; the other floor then forced the writer to pad with
+// exactly the non-event the change existed to remove, and it reached print (their
+// lesson 198). Nothing had gone wrong with either check: the defect was that the number
+// lived in two places.
+//
+// If you change these, change them HERE. Both consumers read these bindings, and
+// prompts/write-issue.md must agree — an instruction its gate contradicts is not an
+// instruction, and the gate wins by being the one that can stop the run.
+const FP_MIN = 3;   // fewer than this and the archive list / RSS have too little to show
+const FP_MAX = 6;   // more than this and the "one page" promise stops being true
+
 const fpH = (contentHtml.match(/<p class="fp-h">/g) || []).length;
-need(fpH >= 3, `Only ${fpH} front-page headlines (<p class="fp-h">). The archive list and RSS descriptions are built from these; the front page needs 3–6.`);
-want(fpH <= 6, `${fpH} front-page items — the summary is meant to fit one page; more than 5 usually will not.`);
+need(fpH >= FP_MIN, `Only ${fpH} front-page headlines (<p class="fp-h">). The archive list and RSS descriptions are built from these; the front page needs ${FP_MIN}–${FP_MAX}.`);
+want(fpH <= FP_MAX, `${fpH} front-page items — the summary is meant to fit one page; more than ${FP_MAX} usually will not.`);
 need(/class="frontpage"/.test(contentHtml),
   'No .frontpage block — the one-page summary is a required element. ' +
   'See prompts/write-issue.md, Structure: the front page is <section class="frontpage">.');
@@ -134,7 +149,9 @@ need(/class="frontpage"/.test(contentHtml),
 // check that quietly drops the last element is worse than none.
 const fpItems = html.split('<div class="fp-item">').slice(1)
   .map(part => part.split(/<div class="fp-rule|<h2\b/)[0]);
-need(fpItems.length >= 3, `Only ${fpItems.length} .fp-item blocks parsed; the front page needs at least 3.`);
+// Second consumer of FP_MIN. See the note at its declaration: this is the floor that
+// disagreed with the other one in the reference instance.
+need(fpItems.length >= FP_MIN, `Only ${fpItems.length} .fp-item blocks parsed; the front page needs at least ${FP_MIN}.`);
 fpItems.forEach((block, i) => {
   need(/<div class="fp-rank">\s*\d+\s*<\/div>/.test(block),
     `Front-page item ${i + 1}: .fp-rank is missing or carries a modifier class (e.g. "fp-rank low"). ` +
@@ -462,6 +479,49 @@ if (existsSync(statusPath)) {
       `data/experimental-status.json has experimental: false but no approvedBy/approvedOn. The label ` +
       `may only come off by a recorded human decision; an unattributed change is indistinguishable ` +
       `from the agent removing it.`);
+  }
+}
+
+/* ---------- 8. the window must have closed before it was measured ---------- */
+// A seven-day window ending on a date that has not arrived yet returns a partial count,
+// and every comparison drawn from it — against a 90-day baseline, against last week,
+// against "typical" — is arithmetic on two different lengths of time. The result is
+// wrong in the direction that reads as news: a fraction of a week against a full-week
+// baseline prints as a collapse, and it prints WELL-SOURCED, because the query really
+// did return that number.
+//
+// The reference instance ran a dry run on 2026-09-05 for the week ending 2026-09-11.
+// The window held about two days. It returned 49 service requests against a ~267/week
+// baseline, and the writer led with "one of the quietest weeks measured this year" —
+// true arithmetic, false claim, from feeds that were working perfectly (their lesson 197).
+//
+// Compared against the facts file's OWN queriedAt, never the clock: verifying a two-year-old
+// issue must ask whether the window had closed when the data was fetched, not whether it has
+// closed by now. Day granularity, because the normal scheduled run queries on the morning of
+// the publication date — same day is complete enough; a window whose end is a CALENDAR DAY
+// beyond the query has genuinely not happened yet.
+if (facts) {
+  const windowEnd = facts.week ?? week;          // bin/fetch-data.mjs sets windowEnd = week
+  const queriedAt = facts.queriedAt ?? null;
+
+  if (!queriedAt) {
+    warn.push(`data/facts/${windowEnd ?? '(unknown week)'}.json has no queriedAt, so the window's ` +
+      `integrity cannot be checked. That is the signature of a dry-run artifact — nothing was ` +
+      `actually fetched. Do not publish an issue built on it.`);
+  } else if (windowEnd) {
+    const queriedDay = String(queriedAt).slice(0, 10);
+    if (queriedDay < windowEnd) {
+      const daysShort = Math.round(
+        (new Date(`${windowEnd}T00:00:00Z`) - new Date(`${queriedDay}T00:00:00Z`)) / 86400000);
+      fatal.push(
+        `The data window ends ${windowEnd} but the facts were queried on ${queriedDay} — ` +
+        `${daysShort} day(s) of that window had not happened yet. Every figure in this issue ` +
+        `covers a short week and every comparison against a full-week or 90-day baseline ` +
+        `understates it, which reads as a decline that did not occur. Re-run bin/fetch-data.mjs ` +
+        `after ${windowEnd}, or build the issue for a week that has finished. ` +
+        `(This is not about feed lag — a live feed with no lag at all has the same problem when ` +
+        `part of the window is in the future.)`);
+    }
   }
 }
 

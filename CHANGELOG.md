@@ -1,5 +1,81 @@
 # Changelog
 
+## [0.18.0] — 2026-09-06
+
+Three findings from the 20015.news reference instance's editorial session, each
+**verified against this repo before adoption** rather than taken on report. Two were
+latent defects here; one was a live defect. What the instance found and this repo does
+not have is recorded in `docs/KIT-COORDINATION.md`, not adopted blind.
+
+### Fixed
+
+- **The front-page count lived in two places, fifty lines apart, and would have
+  disagreed the moment either moved.** `bin/verify-issue.mjs` checked the count twice —
+  once against `<p class="fp-h">` headlines, once against `.fp-item` blocks — with the
+  floor written as a bare `3` in both. Each check was correct about its own marker, and
+  nothing connected them.
+
+  The reference instance hit exactly this: it lowered one floor so a quiet week could
+  run two items, the other floor kept rejecting that count, and the writer padded the
+  issue with the non-event the change existed to remove. It reached print. Their gate
+  won by being the one that could stop the run.
+
+  Now `FP_MIN`/`FP_MAX`, one declaration with two consumers. `prompts/write-issue.md`
+  said **4–5** while the gate permitted **3–6** — a third number, and the same class of
+  defect one step removed — so the prompt now states the gate's range, points at the
+  constants as the authority, and says what to do when a prompt and its gate disagree.
+
+  Guarded by **a positive fixture**, which is the part worth copying: `fixtures/ok-min-frontpage.html`
+  carries exactly `FP_MIN` items and must PUBLISH. Every other fixture here is a negative
+  control, and negative controls cannot catch a gate drifting away from the brief — they
+  prove bad input fails, never that permitted input still passes.
+
+- **A README that restated the version drifted a full release behind it.** `README.md`
+  said "Version 0.16.9" over a `package.json` saying `0.17.0`. Nothing announced it,
+  because a description of state kept separately from the state goes stale in silence —
+  the same shape as a prompt restating a gate's word list. The README now points at
+  `package.json` instead of repeating it, and `doctor` fails when the version's
+  authorities disagree: no CHANGELOG entry for the current version, or prose restating a
+  number. The git tag is reported but not enforced, since it legitimately lags between a
+  bump and its release.
+
+### Added
+
+- **A data window that had not closed when it was measured is now FATAL**
+  (`bin/verify-issue.mjs` §8). A seven-day window ending on a date that has not arrived
+  returns a partial count, and every comparison drawn from it — against last week,
+  against a 90-day baseline — is arithmetic over two different lengths of time. It fails
+  in the direction that reads as news: a fraction of a week against a full-week baseline
+  prints as a collapse, and it prints **well-sourced**, because the query really did
+  return that number.
+
+  The reference instance ran a window holding about two days, got 49 service requests
+  against a ~267/week baseline, and its writer led with *"one of the quietest weeks
+  measured this year."* True arithmetic, false claim, from feeds with no lag at all.
+
+  **This is not the lag guard, and that distinction is the finding.** Lag is the feed
+  being behind reality; this is part of the window not having happened yet. A perfectly
+  live feed has this problem and the lag argument says nothing about it — which is why
+  the instance had downgraded its own version of this check to telemetry after correctly
+  establishing that its feeds measure live.
+
+  Compared against the facts file's **own `queriedAt`**, never the clock, so verifying a
+  two-year-old issue asks whether the window had closed when the data was fetched rather
+  than whether it has closed by now. Day granularity: the normal scheduled run queries on
+  the morning of the publication date and passes; a window whose end is a calendar day
+  beyond the query has genuinely not happened. A facts file with no `queriedAt` warns
+  rather than fails — that is a dry-run artifact, and it says so.
+
+*Verified: every branch driven as a negative control with the failure line read, not the
+exit code — the window guard across six cases (normal same-day run passes; 6-day and
+1-day future windows fatal; null `queriedAt` warns; an old issue re-verified today
+passes; no facts file is silent), and both version-check directions (README restating a
+number, and a version with no changelog entry) failing and restoring green. Raising
+`FP_MIN` to 4 makes verify report **two** broken promises, which is the direct evidence
+both consumers now read the one constant, and turns the positive fixture red; restored,
+green. doctor 17/17, and each new case confirmed to go red for the right reason by
+disabling the assertion behind it. Reasoned: nothing — every claim here was executed.*
+
 ## [0.17.0] — 2026-09-05
 
 ### Added

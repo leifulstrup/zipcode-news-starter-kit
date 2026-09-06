@@ -1,7 +1,11 @@
 # zipcode-news-starter-kit
 
-**Version 0.16.9** — see [CHANGELOG.md](CHANGELOG.md) for what's changed and how
-the kit is versioned.
+**Version:** `package.json` is the one place the number lives. See
+[CHANGELOG.md](CHANGELOG.md) for what changed in each release and how the kit is
+versioned, and the git tags for which commit is which version. This line used to
+restate the number and drifted a full release behind it — a description of state kept
+separately from the state goes stale silently, and `npm run doctor` now fails when the
+four places that carry the version disagree.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
 and operate, published on your own site, for free-tier money.

@@ -479,8 +479,19 @@ publisher's explicit approval.
 
 Open with a **one-page front summary**: compact masthead (the configured name — with
 "(Experimental)" if configured — and the configured tagline as subtitle), dateline,
-`.aibar`, a `THE WEEK IN ONE PAGE` heading over a 2px rule, then **4–5 items ranked
+`.aibar`, a `THE WEEK IN ONE PAGE` heading over a 2px rule, then **3 to 6 items ranked
 by consequence to residents**.
+
+**Let the count follow the week, not a template.** Three items in a quiet week is a
+true report of a quiet week; padding to a habitual five means the last one or two are
+filler, and filler on a front page is where a recurring measurement gets promoted to
+news for having a number. A reader should be able to tell an eventful week from a
+quiet one by looking at the front page. If they cannot, it is a form being filled in.
+
+The range is set in `bin/verify-issue.mjs` (`FP_MIN`/`FP_MAX`), which is the authority
+— this sentence describes it and can go stale. If the two ever disagree, the gate wins
+by being the one that can stop the run, and that is a bug to fix in both, not to work
+around here.
 
 **The whole summary is wrapped in `<section class="frontpage">…</section>`.** That
 wrapper is required — `bin/verify-issue.mjs` fails the issue without it, and the
