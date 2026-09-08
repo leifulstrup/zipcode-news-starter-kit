@@ -219,6 +219,30 @@ sources is institutional bias wearing a different costume: an automated pipeline
 appetite is set by data availability rather than news judgement, so what is easiest
 to query will quietly dominate what gets written unless you watch for it.
 
+**Q10 — Recency.** *What share of this issue is new since the last one?*
+Every other question here asks whether an issue is internally sound. An issue can
+score Strong on all seven and be a verbatim reprint: every claim sourced, every
+uncertainty admitted, every geography correct, and nothing in it new. For a weekly
+that is the defining failure mode, and it is invisible per issue — you can only see
+it by comparing two, which is why this sits here and not above.
+
+Measured by `bin/check-recency.mjs` as the share of news-body sentences already
+published in the previous edition, and reported as `Q10_recency` in the measurement
+archive.
+
+**Strong** = the trailing four issues sit at or below the warn threshold recorded in
+`data/recency-calibration.json`, **and** that threshold has ratcheted down at least
+once since it was first set. The second clause is the one that matters: compliance
+with a number you chose for yourself is not evidence, and a threshold that never
+moves is a description of your habits rather than a standard.
+
+**Unscored** until the instance has calibrated. This kit ships no thresholds — a
+recency figure that is good for a dense civic ZIP is poor for a quiet one, so the
+numbers have to come from your own archive (`--calibrate`, after three or more
+issues). An uncalibrated instance scores *Unscored*, never Adequate: a dimension
+with no instrument must not quietly award itself a passing grade. That is assumption
+A7 — a number can decorate a weak claim — turned on the rubric itself.
+
 ---
 
 ## Prohibitions — the anti-patterns
@@ -244,5 +268,15 @@ to query will quietly dominate what gets written unless you watch for it.
 5. Ask who each item is written for. That is Q4.
 6. Log the three verified claims in `data/accuracy-log.md`.
 
-Verdict rule: **publishable if no question is Weak, and Q1 and Q7 are Strong.**
-Everything else is an improvement target, not a blocker.
+Verdict rule: **publishable if no per-issue question — Q1 through Q7 — is Weak, and
+Q1 and Q7 are Strong.** Everything else is an improvement target, not a blocker.
+
+**Q8, Q9 and Q10 do not block publication**, and the rule now says so out loud. It
+used to read "no question is Weak", which meant Q1–Q7 to anyone who had read the
+section headings and meant all ten to anyone who had not. That was harmless while
+the publication-level questions were quarterly reviews; it stopped being harmless
+when Q10 arrived, because Q10 is measured on every issue and a literal reading would
+let a quiet week fail to publish — forcing exactly the padding this rubric's Q6 and
+the front-page rules exist to prevent. Two statements about what blocks publication,
+each internally consistent, that could disagree: the same defect as two gates over
+one structure, in prose.

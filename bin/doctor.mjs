@@ -481,6 +481,42 @@ const width = Math.max(...rows.map(r => r.case.length));
   });
 }
 
+// The rubric and the thing that measures it must agree on which questions exist. This is
+// the prompt-describes-a-gate problem in its other form: QA-QC/measure-issue.mjs emits a
+// key per question, RUBRIC.md defines them in prose, and nothing connects the two. Renumber
+// or rename a question and the measurement key becomes a dangling reference that still
+// prints a number — the most convincing kind of stale, because it looks like evidence.
+//
+// Direction matters: every question the INSTRUMENT emits must exist in the RUBRIC, not the
+// reverse. Q8 and Q9 are quarterly human reviews with no per-issue instrument, and that is
+// correct rather than missing.
+{
+  const rubric = readFileSync(join(ROOT, 'QA-QC', 'RUBRIC.md'), 'utf8');
+  const defined = new Set([...rubric.matchAll(/^(?:###\s*|\*\*)Q(\d+)\s*[—-]/gm)].map(m => m[1]));
+
+  const run = spawnSync(process.execPath,
+    ['QA-QC/measure-issue.mjs', 'fixtures/good-issue.html'], { cwd: ROOT, encoding: 'utf8' });
+  let emitted = new Set();
+  try {
+    emitted = new Set(Object.keys(JSON.parse(run.stdout)).filter(k => /^Q\d+_/.test(k))
+      .map(k => k.match(/^Q(\d+)_/)[1]));
+  } catch { /* handled by the assertion below */ }
+
+  const orphans = [...emitted].filter(q => !defined.has(q));
+  const ok = emitted.size > 0 && orphans.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'the rubric defines every question the measurement emits',
+    detail: ok
+      ? `rubric Q${[...defined].sort((a,b)=>a-b).join(', Q')} · measured Q${[...emitted].sort((a,b)=>a-b).join(', Q')}`
+      : emitted.size === 0
+        ? 'measure-issue.mjs emitted no question keys — it did not run, or its output is not JSON'
+        : `measure-issue.mjs emits Q${orphans.join(', Q')} which RUBRIC.md does not define. ` +
+          `A measurement whose question was renamed still prints a number, which reads as evidence.`,
+  });
+}
+
 console.log('\ndoctor — gate self-test against fixtures/\n');
 for (const r of rows)
   console.log(`  ${r.result.padEnd(4)}  ${r.case.padEnd(width)}  ${r.detail}`);

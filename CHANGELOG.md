@@ -1,5 +1,78 @@
 # Changelog
 
+## [0.20.0] — 2026-09-08
+
+The rubric gains the question it could not previously ask, now that v0.19.0 built
+the instrument. Drafted on a branch and reviewed by the publisher before merge —
+`QA-QC/` is the standard the writing agent is judged against, and an agent should
+not set its own bar.
+
+### Added
+
+- **Q10 — Recency**, under the publication-level heading with Q8 and Q9. Every other
+  question asks whether an issue is internally sound; an issue can score Strong on
+  all seven and be a verbatim reprint, with every claim sourced, every uncertainty
+  admitted, every geography correct, and nothing in it new. For a weekly that is the
+  defining failure mode, and it is invisible per issue — you can only see it by
+  comparing two, which is why it sits with the publication-level questions and is
+  written as a paragraph rather than a banded table. Scored per issue it would mark
+  the first issue Weak for having no predecessor.
+
+  **Strong** requires the trailing four issues at or below the recorded warn
+  threshold **and** that threshold having ratcheted down at least once. The second
+  clause is the one that matters: compliance with a number you chose for yourself is
+  not evidence, and a threshold that never moves describes your habits rather than
+  setting a standard. An uncalibrated instance scores **Unscored**, never Adequate —
+  a dimension with no instrument must not award itself a passing grade, which is
+  assumption A7 turned on the rubric itself.
+
+- **`Q10_recency` in `QA-QC/measure-issue.mjs`**, carrying the reading, the previous
+  edition it was measured against, and the calibration state. It reports and never
+  scores: the Strong band needs four issues and a threshold history, neither of which
+  one issue can answer.
+
+- **A doctor check that the rubric defines every question the measurement emits.**
+  This is the prompt-describes-a-gate problem in its other form — `measure-issue.mjs`
+  emits a key per question, `RUBRIC.md` defines them in prose, and nothing connected
+  the two. Renumber a question and the measurement key becomes a dangling reference
+  that still prints a number, which is the most convincing kind of stale because it
+  looks like evidence. Instrument ⊆ rubric, deliberately: Q8 and Q9 are quarterly
+  human reviews with no per-issue instrument, and that is correct rather than missing.
+
+### Changed
+
+- **The verdict rule now names its range.** It read *"publishable if no question is
+  Weak"*, which meant Q1–Q7 to anyone who had read the section headings and all ten
+  to anyone who had not. Harmless while the publication-level questions were quarterly
+  reviews; not harmless with Q10, which is measured on every issue — a literal reading
+  would let a quiet week fail to publish, forcing exactly the padding Q6 and the
+  front-page rules exist to prevent. Two statements about what blocks publication,
+  each internally consistent, that could disagree: the same defect as two gates over
+  one structure, in prose.
+
+- **`bin/check-recency.mjs` is importable.** `newsSentences()` and `overlap()` are
+  exported and the CLI is wrapped in `main()`, so `measure-issue.mjs` imports the
+  measurement instead of defining a second notion of "repeated sentence" — the rule
+  that file already states for source classification, and the reason it imports
+  `bin/source-classes.mjs`.
+
+### Fixed
+
+- **The CLI entry-point check never matched on a path containing a space**, so
+  `check-recency` silently became a no-op on any such checkout. Introduced while
+  making the module importable and caught before release: the guard compared
+  `import.meta.url` against a hand-built `` `file://${process.argv[1]}` ``, and
+  `import.meta.url` percent-encodes spaces where the template string does not. Now
+  `pathToFileURL()`. It surfaced only because the "does the CLI still work" check
+  printed nothing where a percentage belonged — the failure was silent success.
+
+*Verified: Q10 across all three states — uncalibrated with a real predecessor
+(Unscored, and the 8.8% reading still reported), calibrated under warn (candidate for
+Strong), calibrated verbatim reprint (Weak at 100%); check-recency's three CLI modes
+after the refactor, and importing it produces no output; the new doctor check driven
+red by renumbering Q10 to Q11 in the rubric alone, then restored. doctor 22/22.
+Reasoned: nothing — every claim here was executed.*
+
 ## [0.19.0] — 2026-09-08
 
 Three editorial changes, on the publisher's direction and the reference instance's

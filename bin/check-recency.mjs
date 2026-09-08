@@ -37,6 +37,7 @@
  */
 import { readFileSync, existsSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { ROOT } from './lib/config.mjs';
 
 const args = process.argv.slice(2);
@@ -49,7 +50,7 @@ const CAL_PATH = join(ROOT, 'data', 'recency-calibration.json');
 // News prose only. The disclosure bar, the per-section source apparatus and the
 // standing About text repeat by DESIGN — counting them would measure the template
 // rather than the reporting, and would report a high score for a well-behaved issue.
-function newsSentences(html) {
+export function newsSentences(html) {
   let s = html
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -69,7 +70,7 @@ function newsSentences(html) {
     .filter(Boolean);
 }
 
-function overlap(current, previous) {
+export function overlap(current, previous) {
   const prior = new Set(previous);
   const repeated = current.filter(x => prior.has(x));
   return {
@@ -80,113 +81,130 @@ function overlap(current, previous) {
   };
 }
 
-/* ---------- locating issues ---------- */
+/* ---------- CLI below this line ----------
+ *
+ * Everything above is importable and side-effect free. QA-QC/measure-issue.mjs imports
+ * newsSentences() and overlap() so the rubric's Q10 evidence and this gate cannot
+ * disagree about what a "repeated sentence" is. measure-issue.mjs already follows this
+ * rule for source classification, and states why: in the reference implementation two
+ * tools once reported different primary shares for the same issue, each internally
+ * consistent. A metric two tools define differently cannot be trended.
+ */
+// pathToFileURL, not a template string: import.meta.url percent-encodes spaces and a
+// hand-built `file://${argv[1]}` does not, so the two never match for anyone whose
+// checkout sits under a path containing a space. The CLI silently became a no-op.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
 
-const issuesDir = join(ROOT, 'issues');
-const allIssues = existsSync(issuesDir)
-  ? readdirSync(issuesDir).filter(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f)).sort()
-  : [];
+function main() {
+  /* ---------- locating issues ---------- */
 
-function previousOf(week) {
-  const idx = allIssues.indexOf(`${week}.html`);
-  if (idx > 0) return allIssues[idx - 1];
-  return allIssues.filter(f => f < `${week}.html`).pop() ?? null;
-}
+  const issuesDir = join(ROOT, 'issues');
+  const allIssues = existsSync(issuesDir)
+    ? readdirSync(issuesDir).filter(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f)).sort()
+    : [];
 
-/* ---------- calibrate ---------- */
+  function previousOf(week) {
+    const idx = allIssues.indexOf(`${week}.html`);
+    if (idx > 0) return allIssues[idx - 1];
+    return allIssues.filter(f => f < `${week}.html`).pop() ?? null;
+  }
 
-if (CALIBRATE) {
-  if (allIssues.length < 3) {
-    console.log(`check-recency --calibrate: ${allIssues.length} published issue(s) in issues/.`);
-    console.log('Need at least 3 to describe a distribution. Publish a few more, then run this again.');
-    console.log('Until then the measurement still prints every week and enforces nothing, which is correct.');
+  /* ---------- calibrate ---------- */
+
+  if (CALIBRATE) {
+    if (allIssues.length < 3) {
+      console.log(`check-recency --calibrate: ${allIssues.length} published issue(s) in issues/.`);
+      console.log('Need at least 3 to describe a distribution. Publish a few more, then run this again.');
+      console.log('Until then the measurement still prints every week and enforces nothing, which is correct.');
+      process.exit(0);
+    }
+    const readings = [];
+    for (let i = 1; i < allIssues.length; i++) {
+      const cur = newsSentences(readFileSync(join(issuesDir, allIssues[i]), 'utf8'));
+      const prv = newsSentences(readFileSync(join(issuesDir, allIssues[i - 1]), 'utf8'));
+      const o = overlap(cur, prv);
+      readings.push({ week: allIssues[i].replace('.html', ''), pct: o.pct, sentences: o.sentences });
+    }
+    const pcts = readings.map(r => r.pct).sort((a, b) => a - b);
+    const median = pcts[Math.floor(pcts.length / 2)];
+    const worst = pcts[pcts.length - 1];
+
+    console.log('\ncheck-recency --calibrate\n');
+    for (const r of readings) console.log(`  ${r.week}   ${String(r.pct).padStart(5)}%   (${r.sentences} news sentences)`);
+    console.log(`\n  median ${median}%   worst ${worst}%`);
+    console.log('\nProposed starting thresholds, derived from YOUR issues — not from anyone else\'s:');
+    const warn = Math.max(5, Math.round(median));
+    const fail = Math.max(warn + 5, Math.round(worst));
+    console.log(`  warn ${warn}%   fail ${fail}%`);
+    console.log('\nThese are a CEILING to ratchet down, not a target to sit at. Set them where your');
+    console.log('better weeks already land, so a bad week is what trips them.\n');
+
+    writeFileSync(CAL_PATH, JSON.stringify({
+      calibratedOn: new Date().toISOString().slice(0, 10),
+      calibratedFrom: readings,
+      warnAbovePct: warn,
+      failAbovePct: fail,
+      note: 'Derived from this instance\'s own archive by bin/check-recency.mjs --calibrate. ' +
+            'A ratchet, not a target: tighten as issues land under it and keep the reading that justified each step. ' +
+            'Never copy these to another instance — they describe this ZIP\'s history and nothing else.',
+    }, null, 2) + '\n');
+    console.log(`Wrote ${CAL_PATH.replace(ROOT + '/', '')}. Enforcement is now on.\n`);
     process.exit(0);
   }
-  const readings = [];
-  for (let i = 1; i < allIssues.length; i++) {
-    const cur = newsSentences(readFileSync(join(issuesDir, allIssues[i]), 'utf8'));
-    const prv = newsSentences(readFileSync(join(issuesDir, allIssues[i - 1]), 'utf8'));
-    const o = overlap(cur, prv);
-    readings.push({ week: allIssues[i].replace('.html', ''), pct: o.pct, sentences: o.sentences });
+
+  /* ---------- measure one issue ---------- */
+
+  const week = arg('--week');
+  const file = arg('--file');
+  if (!week && !file) {
+    console.error('usage: check-recency.mjs --week YYYY-MM-DD | --file <issue.html> | --calibrate');
+    process.exit(2);
   }
-  const pcts = readings.map(r => r.pct).sort((a, b) => a - b);
-  const median = pcts[Math.floor(pcts.length / 2)];
-  const worst = pcts[pcts.length - 1];
 
-  console.log('\ncheck-recency --calibrate\n');
-  for (const r of readings) console.log(`  ${r.week}   ${String(r.pct).padStart(5)}%   (${r.sentences} news sentences)`);
-  console.log(`\n  median ${median}%   worst ${worst}%`);
-  console.log('\nProposed starting thresholds, derived from YOUR issues — not from anyone else\'s:');
-  const warn = Math.max(5, Math.round(median));
-  const fail = Math.max(warn + 5, Math.round(worst));
-  console.log(`  warn ${warn}%   fail ${fail}%`);
-  console.log('\nThese are a CEILING to ratchet down, not a target to sit at. Set them where your');
-  console.log('better weeks already land, so a bad week is what trips them.\n');
+  const curPath = file ?? join(issuesDir, `${week}.html`);
+  if (!existsSync(curPath)) { console.error(`::error::${curPath} not found`); process.exit(1); }
 
-  writeFileSync(CAL_PATH, JSON.stringify({
-    calibratedOn: new Date().toISOString().slice(0, 10),
-    calibratedFrom: readings,
-    warnAbovePct: warn,
-    failAbovePct: fail,
-    note: 'Derived from this instance\'s own archive by bin/check-recency.mjs --calibrate. ' +
-          'A ratchet, not a target: tighten as issues land under it and keep the reading that justified each step. ' +
-          'Never copy these to another instance — they describe this ZIP\'s history and nothing else.',
-  }, null, 2) + '\n');
-  console.log(`Wrote ${CAL_PATH.replace(ROOT + '/', '')}. Enforcement is now on.\n`);
-  process.exit(0);
+  const prevArg = arg('--previous');
+  const prevName = prevArg ?? (week ? previousOf(week) : null);
+  const prevPath = prevArg ?? (prevName ? join(issuesDir, prevName) : null);
+
+  if (!prevPath || !existsSync(prevPath)) {
+    console.log(`check-recency ${basename(curPath)}: no previous edition to compare against.`);
+    console.log('  The first issue has nothing to repeat. Nothing to check.');
+    process.exit(0);
+  }
+
+  const o = overlap(
+    newsSentences(readFileSync(curPath, 'utf8')),
+    newsSentences(readFileSync(prevPath, 'utf8')));
+
+  const cal = existsSync(CAL_PATH) ? JSON.parse(readFileSync(CAL_PATH, 'utf8')) : null;
+
+  console.log(`check-recency ${basename(curPath)} vs ${basename(prevPath)}`);
+  console.log(`  ${o.repeated} of ${o.sentences} news sentences already published — ${o.pct}%`);
+  for (const ex of o.examples) console.log(`    repeated: "${ex.slice(0, 90)}${ex.length > 90 ? '…' : ''}"`);
+
+  if (!cal) {
+    console.log('\n  MEASURED, NOT ENFORCED. data/recency-calibration.json does not exist, so there are');
+    console.log('  no thresholds — and this kit ships none, because a threshold copied from another');
+    console.log('  publication is a number with no provenance. Run:');
+    console.log('\n      node bin/check-recency.mjs --calibrate\n');
+    console.log('  once you have three or more issues, and it will derive thresholds from your own archive.');
+    process.exit(0);
+  }
+
+  if (o.pct > cal.failAbovePct) {
+    console.error(`::error::${o.pct}% of this issue was already published last week, above your recorded ` +
+      `fail threshold of ${cal.failAbovePct}% (calibrated ${cal.calibratedOn}). A subscriber is reading ` +
+      `the same paragraphs again. Lead each item with what CHANGED since the last issue; a standing fact ` +
+      `may appear as one status line and may not be re-argued or re-headlined.`);
+    process.exit(1);
+  }
+  if (o.pct > cal.warnAbovePct) {
+    console.log(`::warning::${o.pct}% already published last week, above your warn threshold of ` +
+      `${cal.warnAbovePct}%. Not blocking. Worth reading the repeated sentences above and asking whether ` +
+      `each one earns its place a second time.`);
+  }
+  console.log(`\nrecency ok — ${o.pct}% against warn ${cal.warnAbovePct}% / fail ${cal.failAbovePct}%`);
+
 }
-
-/* ---------- measure one issue ---------- */
-
-const week = arg('--week');
-const file = arg('--file');
-if (!week && !file) {
-  console.error('usage: check-recency.mjs --week YYYY-MM-DD | --file <issue.html> | --calibrate');
-  process.exit(2);
-}
-
-const curPath = file ?? join(issuesDir, `${week}.html`);
-if (!existsSync(curPath)) { console.error(`::error::${curPath} not found`); process.exit(1); }
-
-const prevArg = arg('--previous');
-const prevName = prevArg ?? (week ? previousOf(week) : null);
-const prevPath = prevArg ?? (prevName ? join(issuesDir, prevName) : null);
-
-if (!prevPath || !existsSync(prevPath)) {
-  console.log(`check-recency ${basename(curPath)}: no previous edition to compare against.`);
-  console.log('  The first issue has nothing to repeat. Nothing to check.');
-  process.exit(0);
-}
-
-const o = overlap(
-  newsSentences(readFileSync(curPath, 'utf8')),
-  newsSentences(readFileSync(prevPath, 'utf8')));
-
-const cal = existsSync(CAL_PATH) ? JSON.parse(readFileSync(CAL_PATH, 'utf8')) : null;
-
-console.log(`check-recency ${basename(curPath)} vs ${basename(prevPath)}`);
-console.log(`  ${o.repeated} of ${o.sentences} news sentences already published — ${o.pct}%`);
-for (const ex of o.examples) console.log(`    repeated: "${ex.slice(0, 90)}${ex.length > 90 ? '…' : ''}"`);
-
-if (!cal) {
-  console.log('\n  MEASURED, NOT ENFORCED. data/recency-calibration.json does not exist, so there are');
-  console.log('  no thresholds — and this kit ships none, because a threshold copied from another');
-  console.log('  publication is a number with no provenance. Run:');
-  console.log('\n      node bin/check-recency.mjs --calibrate\n');
-  console.log('  once you have three or more issues, and it will derive thresholds from your own archive.');
-  process.exit(0);
-}
-
-if (o.pct > cal.failAbovePct) {
-  console.error(`::error::${o.pct}% of this issue was already published last week, above your recorded ` +
-    `fail threshold of ${cal.failAbovePct}% (calibrated ${cal.calibratedOn}). A subscriber is reading ` +
-    `the same paragraphs again. Lead each item with what CHANGED since the last issue; a standing fact ` +
-    `may appear as one status line and may not be re-argued or re-headlined.`);
-  process.exit(1);
-}
-if (o.pct > cal.warnAbovePct) {
-  console.log(`::warning::${o.pct}% already published last week, above your warn threshold of ` +
-    `${cal.warnAbovePct}%. Not blocking. Worth reading the repeated sentences above and asking whether ` +
-    `each one earns its place a second time.`);
-}
-console.log(`\nrecency ok — ${o.pct}% against warn ${cal.warnAbovePct}% / fail ${cal.failAbovePct}%`);

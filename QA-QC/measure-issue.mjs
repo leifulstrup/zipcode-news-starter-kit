@@ -24,9 +24,13 @@ if (!file) { console.error('usage: node QA-QC/measure-issue.mjs <issue.html>'); 
 // one definition. Fails loudly: scoring with a second, divergent definition of
 // "primary source" is the bug this import exists to prevent.
 let classes, config;
+let recency;
 try {
   classes = await import('../bin/source-classes.mjs');
   config = await import('../bin/lib/config.mjs');
+  // Q10's evidence comes from the same functions bin/check-recency.mjs runs on, for the
+  // reason stated above: a metric two tools define differently cannot be trended.
+  recency = await import('../bin/check-recency.mjs');
 } catch (e) {
   console.error('FATAL: cannot load ../bin/source-classes.mjs — run this from the repo root:');
   console.error('  node QA-QC/measure-issue.mjs issues/<week>.html');
@@ -124,6 +128,53 @@ const disclosure = {
   feedbackRoute: nh(feedbackRe),
 };
 
+// ---------- Q10 recency (publication-level; see RUBRIC.md) ----------
+// Reported, never scored here. The rubric's Strong band needs the trailing four issues
+// AND a threshold that has moved, neither of which one issue can answer — so this emits
+// the reading and the calibration state and leaves the judgement to the human.
+function measureRecency() {
+  const dir = join(config.ROOT, 'issues');
+  let prior = [];
+  try {
+    prior = readdirSync(dir).filter(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f)).sort();
+  } catch { /* no issues/ yet */ }
+
+  const me = basename(resolve(file));
+  const idx = prior.indexOf(me);
+  const prev = idx > 0 ? prior[idx - 1] : prior.filter(f => f < me).pop() ?? null;
+
+  let calibration = null;
+  try {
+    calibration = JSON.parse(readFileSync(join(config.ROOT, 'data', 'recency-calibration.json'), 'utf8'));
+  } catch { /* uncalibrated — the expected state of a young instance */ }
+
+  if (!prev) {
+    return { previousEdition: null, note: 'No previous edition — nothing to repeat.',
+             calibrated: !!calibration, band: 'Unscored' };
+  }
+  const o = recency.overlap(
+    recency.newsSentences(readFileSync(resolve(file), 'utf8')),
+    recency.newsSentences(readFileSync(join(dir, prev), 'utf8')));
+
+  return {
+    previousEdition: prev.replace('.html', ''),
+    newsSentences: o.sentences,
+    alreadyPublished: o.repeated,
+    repeatedPct: o.pct,
+    calibrated: !!calibration,
+    warnAbovePct: calibration?.warnAbovePct ?? null,
+    failAbovePct: calibration?.failAbovePct ?? null,
+    // Never "Adequate" by default: an uncalibrated dimension has no instrument, and a
+    // band awarded without one is the impression this rubric exists to replace.
+    band: calibration ? (o.pct > calibration.failAbovePct ? 'Weak'
+                       : o.pct > calibration.warnAbovePct ? 'Adequate' : 'candidate for Strong')
+                      : 'Unscored',
+    note: calibration
+      ? 'Strong also requires the trailing four issues under warn AND a threshold that has ratcheted down at least once — judge that from the measurements archive, not from this issue.'
+      : 'Uncalibrated. Run: node bin/check-recency.mjs --calibrate (needs 3+ issues).',
+  };
+}
+
 const out = {
   file,
   bytes: html.length,
@@ -151,6 +202,7 @@ const out = {
     pairedShare: pctSentences.length ? (pctWithAbs / pctSentences.length * 100).toFixed(0) + '%' : 'n/a',
     priorPeriodComparisons: priorYear },
   Q7_disclosure: disclosure,
+  Q10_recency: measureRecency(),
 };
 console.log(JSON.stringify(out, null, 1));
 
