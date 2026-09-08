@@ -312,6 +312,14 @@ jobs:
       - name: Check the issue against the facts it was given
         run: node bin/verify-issue.mjs --week "${{ steps.date.outputs.week }}"
 
+      # How much of this issue a subscriber already read last week. No other gate can
+      # see this: each issue is judged alone, and a verbatim reprint passes all of them.
+      # Measures from the first issue and enforces nothing until the publisher has run
+      # `--calibrate` against their own archive — the kit ships no thresholds, because a
+      # threshold borrowed from another publication is a number with no provenance.
+      - name: Recency — what is new since the last issue
+        run: node bin/check-recency.mjs --week "${{ steps.date.outputs.week }}"
+
       # ---------------------------------------------------------------
       # 4. ARTIFACTS — deterministic again.
       # ---------------------------------------------------------------

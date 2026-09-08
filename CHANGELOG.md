@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.19.0] — 2026-09-08
+
+Three editorial changes, on the publisher's direction and the reference instance's
+accuracy record. Each ships with a test whose answer was known before it ran.
+
+### Changed
+
+- **Source URLs are links again — and the kit stops arguing that they cannot be.**
+  This gate used to *warn when there were too few dead-text URLs*, with the rationale
+  "a hyperlink is dead on paper". The prompt instructed the same form and the model
+  fixture demonstrated it: twelve plain-text URLs, zero anchors. Three places agreeing
+  with each other, which is why it survived — the kit was teaching publishers into its
+  own rubric's Q1 **Weak** band, *"sources named but not linked"*, in a publication
+  whose entire defence is provenance.
+
+  There was never a trade to make. `<a class="u" href="URL">URL</a>` keeps the URL as
+  the visible text, so paper and PDF read exactly as before, and the link works on the
+  web. A `@media print` rule drops the link underline so the printed page is unchanged
+  in fact and not merely in argument. The reference instance proved the same thing
+  across six published editions: every source gained a working link and not one printed
+  word changed.
+
+  Dead-text URLs now warn rather than fail, deliberately — a running instance with a
+  customised brief must not have its next issue blocked by a kit update. The prompt and
+  every fixture teach only the linked form.
+
+- **A fatality COUNT now requires a second source in its own section, and it is fatal.**
+  The existing check wanted two sources for any Tier A section and settled for one. A
+  count is the case where one is not enough.
+
+  The reference instance published *"two homicides recorded so far this year, against
+  zero in the same period last year"* — reproduced exactly from the incident feed,
+  correctly cited, and logged as **misleading** by its own accuracy review. One of the
+  two was in a neighbouring ZIP; the other an apparent domestic murder-suicide. Nothing
+  disagreed with anything and no source was missing.
+
+  **The official record remains the authority for whether a death happened. It is not
+  sufficient for what happened.** A feed row carries area, offence, date and method; it
+  cannot say which neighbourhood inside a patrol district, or whether a death was a
+  street attack, a domestic incident or a crash — and a count is a claim about a set of
+  incidents whose character the reader will infer. Enforced as a source requirement
+  rather than by matching prose for place names: a place-name matcher would be per-ZIP,
+  and would pass a sentence naming the wrong place.
+
+  The brief now also requires the neighbourhood and the nature of each incident, states
+  that **a generic geography caveat does not discharge a specific omission**, and says
+  what to do when the official record lags a trusted outlet: publish what the outlet
+  reports, attributed, say plainly that the record does not yet show it, and name any
+  disagreement rather than resolving it in silence.
+
+### Added
+
+- **`bin/check-recency.mjs` — how much of this issue a subscriber already read last
+  week.** Every other gate here asks whether an issue is internally sound. An issue can
+  pass all of them and be a verbatim reprint: every claim true, every source real, and
+  nothing in it new. For a weekly that is the defining failure mode, and it is invisible
+  per issue — you can only see it by comparing two. The reference instance measured its
+  own six editions at 4.1 → 18.0 → 30.8 → 26.2 → 31.7 percent while every gate stayed
+  green.
+
+  **It ships no thresholds, and that is the design.** Their numbers describe one ZIP's
+  history; copied here they would be numbers with no provenance that publishers would
+  reasonably treat as though they had some. So it measures from the first issue and
+  enforces nothing until `--calibrate` derives thresholds from the instance's own
+  archive, which it writes to `data/recency-calibration.json` as a recorded reading. A
+  ratchet, not a target. Runs every week in the weekly workflow.
+
+*Verified: the fatality gate as a MATCHED PAIR — two fixtures carrying the same claim in
+the same words, differing only in whether a second narrative source is present; one fails,
+one passes, and with the gate disabled the failing one goes green while the passing one
+stays green, so neither passes vacuously. The recency measure at three known points —
+identical issues 100%, a strict subset 98.3% one way and 88.1% the other (proving it is
+directional), a fully rewritten issue 8.8% — plus all four enforcement paths: uncalibrated
+measures without enforcing, over-fail exits 1, under-warn exits 0, between warns without
+blocking. The endnote change driven by reintroducing a single dead-text span into the model
+issue and watching the check go red. doctor 21/21. Reasoned: nothing — every claim here was
+executed.*
+
 ## [0.18.0] — 2026-09-06
 
 Three findings from the 20015.news reference instance's editorial session, each

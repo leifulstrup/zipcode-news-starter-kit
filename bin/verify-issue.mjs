@@ -71,9 +71,33 @@ need(srcBlocks >= 5,
 const cites = (html.match(/class="cite"/g) || []).length;
 need(cites >= 10,
   `Only ${cites} inline citations. Load-bearing claims must cite the source entry they came from (<sup class="cite">).`);
-const visibleUrls = (html.match(/class="u"/g) || []).length;
-want(visibleUrls >= 10,
-  `Only ${visibleUrls} visible source URLs — a hyperlink is dead on paper, so source entries should print their URL in <span class="u">.`);
+// Source URLs must be VISIBLE and CLICKABLE. Those were treated as alternatives here for
+// the kit's whole life — this gate used to warn when there were too few `<span class="u">`
+// URLs, with the rationale "a hyperlink is dead on paper", and the prompt and the model
+// fixture agreed with it. Three places agreeing is why nobody noticed that the kit was
+// instructing publishers into its own rubric's Q1 WEAK band: "sources named but not linked",
+// in a publication whose entire defence is provenance.
+//
+// There was never a trade. `<a class="u" href="URL">URL</a>` has the URL as its visible
+// text, so the printed page and the PDF read exactly as they always did, AND a reader on
+// the web can follow it. The reference instance proved this across six published editions:
+// every source gained a working link and not one printed word changed.
+//
+// A warning rather than a fatal, deliberately: a running instance that has ejected or
+// customised its brief may still emit the span form, and a kit update must not fail an
+// existing publisher's next issue. It states the exact fix, and the fixtures and the prompt
+// now teach only the anchor form.
+const urlEntries  = (html.match(/class="u"/g) || []).length;
+const linkedUrls  = (html.match(/<a[^>]*class="u"[^>]*href=/g) || []).length;
+const deadUrls    = (html.match(/<span[^>]*class="u"[^>]*>\s*https?:/g) || []).length;
+
+want(urlEntries >= 10,
+  `Only ${urlEntries} source URLs printed in the issue. Every source entry should show its URL, so a reader on paper can still find it.`);
+want(deadUrls === 0,
+  `${deadUrls} source URL(s) are printed as dead text in <span class="u">. That is the rubric's Q1 Weak band — ` +
+  `"sources named but not linked" — in a publication whose case rests on provenance. Use ` +
+  `<a class="u" href="URL">URL</a> instead: the visible text is still the URL, so paper and PDF are unchanged, ` +
+  `and the link works on the web. ${linkedUrls} of ${urlEntries} are already anchors.`);
 
 /* ---------- 3. structure the site build depends on ---------- */
 // Structure checks scan CONTENT, never the inlined stylesheet: a CSS comment
@@ -364,9 +388,42 @@ sections.forEach((sec, i) => {
       'hosts configured, so this cannot be checked. Add your police department / open-data portal to officialIncident — ' +
       'a fatality cited only to news outlets is not corroborated, however many outlets carried it.');
   }
-  want(m.hosts.length >= 2,
-    `Section ${i + 1} reports a death or violent incident on ${m.hosts.length} source(s): ` +
-    `${m.hosts.join(', ') || 'none'}. Tier A wants two independent observations — the incident feed alone is one source.`);
+  // A COUNT is the case where one source is not enough, and it is FATAL rather than a
+  // want. The reference instance published "two homicides recorded so far this year,
+  // against zero in the same period last year" — reproduced exactly from the incident
+  // feed, correctly cited, and logged as MISLEADING by its own accuracy review. One of
+  // the two was in a neighbouring ZIP; the other was an apparent domestic murder-suicide.
+  //
+  // Nothing disagreed with anything and no source was missing. The feed row is PSA,
+  // offence, date, method — it can say a death occurred and it cannot say WHERE within
+  // the area or WHAT happened. The official record remains the authority for whether the
+  // death happened; it is simply not sufficient to characterise it, and a count is a
+  // claim about a set of incidents whose character the reader will infer.
+  //
+  // The second source is what supplies the neighbourhood and the nature: you cannot
+  // obtain one without reading a narrative record. That is why this is enforced as a
+  // source requirement rather than by pattern-matching the prose for a place name —
+  // a place-name matcher would be per-ZIP, and it would pass on a sentence that named
+  // the wrong place.
+  //
+  // Like the Tier A check above, this cannot distinguish reporting a fatality count from
+  // DECLINING to report one. Word around it — see prompts/write-issue.md §5.
+  const FATALITY_COUNT = /(?:\b(?:\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)\b[^.;]{0,40}?\b(?:homicides?|deaths?|fatal(?:ity|ities)|killed|murders?)\b)|(?:\b(?:homicides?|deaths?|fatal(?:ity|ities)|murders?)\b[^.;]{0,40}?\b(?:count|total|tally|number)\b[^.;]{0,40}?\b(?:\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)\b)/i;
+
+  if (FATALITY_COUNT.test(secText)) {
+    need(m.hosts.length >= 2,
+      `Section ${i + 1} reports a FATALITY COUNT on ${m.hosts.length} source(s): ` +
+      `${m.hosts.join(', ') || 'none'}. A count needs a second, narrative source in the same section. ` +
+      `The incident record is the authority for whether a death occurred and cannot characterise it — ` +
+      `the row carries area, offence, date and method, not which neighbourhood or what happened. ` +
+      `A count sourced to the feed alone can be exact, correctly cited, and still leave a reader with ` +
+      `a false impression of their own street. Get the release or the narrative record, or report the ` +
+      `deaths individually with what is actually known about each.`);
+  } else {
+    want(m.hosts.length >= 2,
+      `Section ${i + 1} reports a death or violent incident on ${m.hosts.length} source(s): ` +
+      `${m.hosts.join(', ') || 'none'}. Tier A wants two independent observations — the incident feed alone is one source.`);
+  }
 });
 
 // Reported crime is not crime. Incident feeds record reports; police departments

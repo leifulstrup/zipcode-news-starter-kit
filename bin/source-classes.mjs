@@ -69,11 +69,13 @@ export function classify(host) {
 
 /** Hosts of every http(s) URL in a chunk of HTML, deduplicated.
  *
- * Scans ALL URLs, not just href attributes. This publication deliberately prints
- * each source URL as VISIBLE TEXT inside `<span class="u">`, because a hyperlink
- * is dead on paper — so many citations are not links at all. A scanner that reads
- * only `href="..."` measures a different, smaller population than one that reads
- * the text, which is exactly how two internally-consistent tools once disagreed. */
+ * Scans ALL URLs, not just href attributes. Source entries print the URL as visible
+ * text AND link it (`<a class="u" href="URL">URL</a>`), so a host appears in both the
+ * href and the text — deduplication makes that harmless. But a source may still be
+ * named in prose without an anchor, and older issues in an archive predate the linked
+ * form entirely. A scanner reading only `href="..."` would measure a different, smaller
+ * population than one reading the text, which is exactly how two internally-consistent
+ * tools once disagreed. Read both. */
 export function hostsIn(html) {
   return [...new Set([...html.matchAll(/https?:\/\/[^\s"'<>)\]]+/g)]
     .map(m => hostOf(m[0])).filter(Boolean))];

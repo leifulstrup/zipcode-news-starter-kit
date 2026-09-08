@@ -76,6 +76,22 @@ const CASES = [
     expectMessage: /Sources for this section/i,
   },
   {
+    // A MATCHED PAIR, which is the whole test: the two fixtures carry the same claim in
+    // the same words, and differ only in whether a second narrative source sits in the
+    // section. One must fail and one must pass. A single negative fixture would prove the
+    // gate blocks something; only the pair proves it blocks the RIGHT something and still
+    // lets the corrected version through.
+    name: 'verify rejects a fatality count sourced to the incident feed alone',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-fatality-count-one-source.html'],
+    expectExit: 1,
+    expectMessage: /FATALITY COUNT/,
+  },
+  {
+    name: 'verify accepts the same fatality count once a narrative source characterises it',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/ok-fatality-count-characterised.html'],
+    expectExit: 0,
+  },
+  {
     // A window that had not closed when it was measured. Not a lag problem — the facts
     // file's own queriedAt predates its own window end, so part of the week had not
     // happened yet. The reference instance published a superlative off exactly this
@@ -412,6 +428,56 @@ const width = Math.max(...rows.map(r => r.case.length));
     detail: problems.length
       ? problems.join('; ') + '. Keep package.json as the single authority.'
       : `${pkgVersion}${tagNote}`,
+  });
+}
+
+// Source URLs must be clickable AND visible. This asserts the kit's own model issue
+// links every one of its sources — a warning-level check, so nothing about the exit
+// code would catch a regression here, and a span quietly reappearing in the fixture is
+// how the old convention would come back. The kit taught the dead-text form in three
+// mutually-agreeing places for its whole life; one of them was this fixture.
+{
+  const out = spawnSync(process.execPath,
+    ['bin/verify-issue.mjs', '--file', 'fixtures/good-issue.html'],
+    { cwd: ROOT, encoding: 'utf8' });
+  const text = (out.stdout ?? '') + (out.stderr ?? '');
+  const dead = /source URL\(s\) are printed as dead text/.test(text);
+  const html = readFileSync(join(ROOT, 'fixtures', 'good-issue.html'), 'utf8');
+  const anchors = (html.match(/<a[^>]*class="u"[^>]*href=/g) || []).length;
+  const spans   = (html.match(/<span[^>]*class="u"[^>]*>\s*https?:/g) || []).length;
+  const ok = !dead && anchors >= 10 && spans === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'every source URL in the model issue is a working link',
+    detail: ok ? `${anchors} linked, 0 dead` :
+      `${anchors} linked, ${spans} dead-text — source entries must be <a class="u" href="URL">URL</a>. ` +
+      `The URL stays the visible text, so paper and PDF are unchanged and the link works on the web.`,
+  });
+}
+
+// The recency measure, at its two known bounds. A measurement that silently returns
+// zero would look like a publication with no repetition at all — the most flattering
+// possible failure, and invisible without a case whose answer is known in advance.
+{
+  const run = (cur, prev) => {
+    const out = spawnSync(process.execPath,
+      ['bin/check-recency.mjs', '--file', cur, '--previous', prev], { cwd: ROOT, encoding: 'utf8' });
+    const m = ((out.stdout ?? '') + (out.stderr ?? '')).match(/already published — ([\d.]+)%/);
+    return m ? parseFloat(m[1]) : null;
+  };
+  // An issue against itself is 100% by definition. Against a strict subset of itself it
+  // must be lower, which also proves the comparison is directional rather than symmetric.
+  const identical = run('fixtures/good-issue.html', 'fixtures/good-issue.html');
+  const superset  = run('fixtures/good-issue.html', 'fixtures/ok-min-frontpage.html');
+  const ok = identical === 100 && superset !== null && superset < 100;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'recency measures a known reprint at 100% and a partial one below it',
+    detail: ok ? `identical ${identical}% · superset ${superset}%` :
+      `identical ${identical}% (expected 100), superset ${superset}% (expected <100) — ` +
+      `the measure is not discriminating, and a real reprint would read as original.`,
   });
 }
 

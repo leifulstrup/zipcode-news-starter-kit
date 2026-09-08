@@ -1,6 +1,6 @@
 {
   "name": "zipcode-news-starter-kit",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
   "type": "module",
   "description": "Starter kit for a weekly, AI-written, gate-checked neighborhood brief for a US ZIP code, published as a static site on Cloudflare",
@@ -17,7 +17,8 @@
     "verify": "node bin/verify-issue.mjs",
     "fetch": "node bin/fetch-data.mjs",
     "render-check": "node bin/render-check.mjs",
-    "fixture": "node bin/make-styled-fixture.mjs"
+    "fixture": "node bin/make-styled-fixture.mjs",
+    "recency": "node bin/check-recency.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.0"

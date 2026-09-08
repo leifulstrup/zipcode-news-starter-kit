@@ -176,7 +176,12 @@
   .srclist li{margin-bottom:6px}
   .srclist li:target{background:#fdf6e8;outline:2px solid #e3d3ae;outline-offset:2px}
   .srclist .u{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.6px;
-    color:var(--ink-soft);word-break:break-all}
+    color:var(--ink-soft);word-break:break-all;border-bottom:1px solid rgba(0,0,0,.18)}
+  /* On paper the URL is the text and the rule under it is noise — the linked form must
+     print exactly as the old unlinked form did, or "nothing is lost" would not be true. */
+  @media print{
+    .srclist .u{border-bottom:none;color:var(--ink-soft)}
+  }
   .srclist .cav{color:var(--ink-faint);font-style:italic}
 
   /* ---------- Per-section source attribution ---------- */
@@ -379,9 +384,9 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s1-1"><b>Anytown City Council</b> — meeting agenda and hearing notice.
-      <span class="u">https://cityhall.example.gov/council/agendas</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://cityhall.example.gov/council/agendas">https://cityhall.example.gov/council/agendas</a> Queried January 8, 2026.</li>
     <li id="s1-2"><b>Anytown Open Data Portal</b> — council records dataset.
-      <span class="u">https://opendata.example.gov/datasets/council-records</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://opendata.example.gov/datasets/council-records">https://opendata.example.gov/datasets/council-records</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -396,7 +401,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s6-1"><b>Anytown Planning Department</b> — active applications list.
-      <span class="u">https://planning.example.gov/applications</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://planning.example.gov/applications">https://planning.example.gov/applications</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -412,9 +417,9 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s5-1"><b>Anytown Transit Authority</b> — Route 12 service alert.
-      <span class="u">https://transit.example.gov/alerts/route-12</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://transit.example.gov/alerts/route-12">https://transit.example.gov/alerts/route-12</a> Queried January 8, 2026.</li>
     <li id="s5-2"><b>Anytown Water Utility</b> — Oak Avenue main replacement project page.
-      <span class="u">https://water.example.gov/projects/oak-avenue</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://water.example.gov/projects/oak-avenue">https://water.example.gov/projects/oak-avenue</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -430,7 +435,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s7-1"><b>Anytown Public Schools</b> — board meeting calendar and boundary study page.
-      <span class="u">https://schools.example.org/board/calendar</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://schools.example.org/board/calendar">https://schools.example.org/board/calendar</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -448,7 +453,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s2-1"><b>Anytown Police Department</b> — incident data, District 4, trailing 30 days.
-      <span class="u">https://police.example.gov/data/incidents</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://police.example.gov/data/incidents">https://police.example.gov/data/incidents</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -465,7 +470,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s4-1"><b>County Recorder of Deeds</b> — recorded sales, ZIP 00000, qualified sales only.
-      <span class="u">https://recorder.example.gov/sales</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://recorder.example.gov/sales">https://recorder.example.gov/sales</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -481,7 +486,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s8-1"><b>County License Portal</b> — food-service license status.
-      <span class="u">https://licenses.example.gov/search</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://licenses.example.gov/search">https://licenses.example.gov/search</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -495,7 +500,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li><b>Anytown Public Works</b> — collection calendar.
-      <span class="u">https://publicworks.example.gov/calendar</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://publicworks.example.gov/calendar">https://publicworks.example.gov/calendar</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -510,7 +515,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li id="s9-1"><b>Anytown Parks Department</b> — permits portal.
-      <span class="u">https://parks.example.gov/permits</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://parks.example.gov/permits">https://parks.example.gov/permits</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 
@@ -526,7 +531,7 @@
   <p><b>Sources for this section</b></p>
   <ol class="srclist">
     <li><b>Anytown City Calendar</b> — consolidated public meetings feed.
-      <span class="u">https://cityhall.example.gov/calendar</span> Queried January 8, 2026.</li>
+      <a class="u" href="https://cityhall.example.gov/calendar">https://cityhall.example.gov/calendar</a> Queried January 8, 2026.</li>
   </ol>
 </div>
 

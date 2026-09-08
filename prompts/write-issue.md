@@ -337,6 +337,26 @@ is the police release or the incident record — not the news coverage of it. If
 coverage exists, write that a death has been reported and that the official record is
 not yet available. That is a true sentence; the confident version is not.
 
+**The official record is the authority for WHETHER a death happened. It is not
+sufficient for WHAT happened.** An incident-feed row carries area, offence, date and
+method; it cannot say which neighbourhood within a patrol district, or whether a death
+was a street attack, a domestic incident, or a crash. So any **fatality count** must
+carry, in the same section, the neighbourhood and the nature of each incident, drawn
+from the narrative record — the release, the docket, the coverage naming the release.
+`bin/verify-issue.mjs` requires a second source in that section, because you cannot get
+one without reading such a record.
+
+**A generic geography caveat does not discharge a specific omission.** "Figures follow
+police district boundaries, which are not the ZIP" is true and does not tell a reader
+that one of the two deaths was in a different ZIP entirely. Name the places.
+
+**When the official record lags a trusted outlet, report it and name the gap.** The
+outlet may carry an incident days before the record does. Publish what the outlet
+reports, attributed, and say plainly that the official record does not yet show it —
+and where the two disagree on a detail, say that too rather than choosing the tidier
+version. The official record still governs; the discrepancy is information, not
+something to resolve in silence.
+
 **Tier B — one primary source, or one named secondary with the limitation in the
 same sentence.** Aggregate counts and trends. Prices and market direction, with the
 mix and geography caveat. Meeting dates, agendas, votes, deadlines.
@@ -442,7 +462,9 @@ the second-best move; the best is not printing it.
 
 Every section ends with **"Sources for this section"** as a numbered
 `<ol class="srclist">`, each entry naming the source, **the URL as visible text** in
-`<span class="u">` (a hyperlink is dead on paper), and its specific caveat, with
+`<a class="u" href="URL">URL</a>` — the URL is the visible text, so it still reads on
+paper and in the PDF, and it works as a link on the web (these were treated as
+alternatives here until v0.19.0; they never were) — and its specific caveat, with
 query dates for database figures. Each load-bearing claim — numbers, dates, legal
 status, attribution — carries `<sup class="cite"><a href="#sN-n">n</a></sup>`
 pointing at its entry. Cite claims, not every sentence; roughly 40 citations across

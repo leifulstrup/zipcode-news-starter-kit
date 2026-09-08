@@ -171,7 +171,12 @@
   .srclist li{margin-bottom:6px}
   .srclist li:target{background:#fdf6e8;outline:2px solid #e3d3ae;outline-offset:2px}
   .srclist .u{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.6px;
-    color:var(--ink-soft);word-break:break-all}
+    color:var(--ink-soft);word-break:break-all;border-bottom:1px solid rgba(0,0,0,.18)}
+  /* On paper the URL is the text and the rule under it is noise — the linked form must
+     print exactly as the old unlinked form did, or "nothing is lost" would not be true. */
+  @media print{
+    .srclist .u{border-bottom:none;color:var(--ink-soft)}
+  }
   .srclist .cav{color:var(--ink-faint);font-style:italic}
 
   /* ---------- Per-section source attribution ---------- */
