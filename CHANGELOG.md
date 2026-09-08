@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.25.0] — 2026-09-08
+
+The standing rules from an eight-release sequence, distilled into Part 1 where a
+publisher building their own gates will read them. Nothing about the machinery changed;
+this is the part of the work that was living in commit messages and cross-session
+notes rather than anywhere a reader would find it.
+
+### Added
+
+- **What it takes to trust a matched pair — three controls, none of them the pair
+  passing.** The fixture must exist and be what its name claims; it must pass with the
+  gate on; and the mutation proving a new check must be one the *old* checks let
+  through. Each was learned from a different failure: a positive fixture two days stale,
+  a control run that says nothing about positives, and a demonstration that fired
+  alongside a check which already worked. **Firing is not evidence; firing where nothing
+  else fires is.**
+
+- **Two corollaries** that cost a release each: disabling a gate is a real control for a
+  *negative* fixture and proves nothing about a positive, since removing a gate can only
+  make things pass more — and **a check that can only run after the condition it looks
+  for has been repaired measures the repair**, which is what a staleness test placed
+  after the rebuild step does.
+
+- **A green local run and a green CI run are different claims**, and only one is about
+  the repository. When they disagree the working copy is what is wrong, and nothing
+  announces the disagreement. Derive CI path filters from what the suite actually opens.
+
+- **The pattern behind three of the above: the release that adds a discipline is where
+  that discipline breaks.** A version enforcing "no band without a definition" shipped an
+  instrument emitting undefined bands. A release arguing a positive must earn its place
+  shipped one that did not. A release about stale fixtures shipped a staleness check that
+  could not fail. Writing the enforcement is when attention is on the rule rather than on
+  the thing being built with it — so run a new rule against the release introducing it,
+  first.
+
+*Verified: doctor 26/26 with the rewritten Part 1 in place. Reasoned: nothing —
+documentation of results each recorded, with its evidence, in the release that produced
+it.*
+
 ## [0.24.0] — 2026-09-08
 
 A delta report from the reference instance, two of whose three items were *"do not port

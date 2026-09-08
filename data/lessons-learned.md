@@ -70,12 +70,34 @@ looks exactly like a quiet pass. Test every new gate against a real failing case
 watch it go red for the right reason before trusting it; a green check on a gate you
 just wrote proves nothing. Prove a permitted case too — a negative fixture shows bad
 input fails and never shows that allowed input still passes, which is how a gate drifts
-away from the brief it was written for. **A rule written into a comment protects the
+away from the brief it was written for. **Trusting one matched pair takes three separate
+controls, and none of them is the pair passing:** the fixture must EXIST and BE what its
+name claims (a positive can go stale, or be reshaped by a transform whose anchor moved,
+and still pass); it must pass with the gate ON; and the mutation you use to prove a new
+check must be one the OLD checks let through — otherwise you have measured that something
+fires, not that the new thing does. **Firing is not evidence; firing where nothing else
+fires is.** Two corollaries learned the hard way: disabling a gate is a real control for a
+negative fixture and proves nothing about a positive, because removing a gate can only
+make things pass MORE; and **a check that can only run after the condition it looks for
+has been repaired measures the repair** — a staleness test that runs after the rebuild
+step can never fail. **A rule written into a comment protects the
 file it sits in and nothing else**: this repo told itself never to parse
 `import.meta.url` as a path because paths contain spaces, and the same bug was written
 three files away two days later, by the maintainer who had read it. If it is
 enforceable in code, enforce it in code — `doctor` checks that entry points use
-`pathToFileURL`, because the prose did not hold.
+`pathToFileURL`, because the prose did not hold. **A green local run and a green CI run
+are different claims**, and only one of them is about the repository — when they disagree
+the working copy is what is wrong, and the disagreement is invisible unless somebody
+looks. Derive CI path filters from what the test suite actually opens, not from what feels
+like machinery.
+
+**And the pattern behind three of the failures above: the release that adds a discipline
+is where that discipline breaks.** A version enforcing "no band without a definition"
+shipped an instrument emitting undefined bands; a release arguing a positive must earn its
+place shipped one that did not; a release about stale fixtures shipped a staleness check
+that could not fail. Writing the enforcement is when your attention is on the rule and not
+on the thing you are building with it. Run the new rule against the release that
+introduces it, first.
 Documented is not working: field names can be read from a service definition, but
 only execution tells you what the query parser accepts. Assert what the answer
 should *look like*, not merely that an answer arrived — a plausibility threshold is
