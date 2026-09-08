@@ -320,6 +320,24 @@ jobs:
       - name: Recency — what is new since the last issue
         run: node bin/check-recency.mjs --week "${{ steps.date.outputs.week }}"
 
+      # Do the gates themselves still work? Every step above asks whether THIS ISSUE is
+      # sound; none asks whether the things asking are. Three of doctor's checks are about
+      # instance state that drifts in a live publication and cannot drift in the template —
+      # the cron schedules against site.config.json, the worker name against wrangler.toml,
+      # and the version's four homes agreeing. Those are the reason this step exists here
+      # rather than only in kit-ci.yml.
+      #
+      # AFTER the issue is written, deliberately. The reference instance had this step
+      # before the write, which tested the PREVIOUS edition's state and reported it as this
+      # run's. An instance that derives its fixtures from its newest issue — a design this
+      # kit does not use, and a publisher may — gets a doctor result that depends on the
+      # edition, and running it first would answer for the wrong one.
+      #
+      # Blocking. doctor's own failure text is "do not publish until this is green", and a
+      # run that cannot trust its gates should not be publishing behind them.
+      - name: The gates must still work
+        run: node bin/doctor.mjs
+
       # ---------------------------------------------------------------
       # 4. ARTIFACTS — deterministic again.
       # ---------------------------------------------------------------

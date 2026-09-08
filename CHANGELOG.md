@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.24.0] — 2026-09-08
+
+A delta report from the reference instance, two of whose three items were *"do not port
+this"* — and one check of my own that their lesson prompted, which found that a check
+shipped hours earlier in v0.23.0 did nothing.
+
+### Fixed
+
+- **The staleness assertion added in v0.23.0 was vacuous.** It compared the generated
+  fixture's mtime against its inputs — and `doctor` rebuilds that fixture near the top of
+  the run, so by the time any later check reads the timestamp the file has always just
+  been written. The comparison could not fail. Proven in a clean clone by making
+  `house-style.css` seventeen seconds newer: doctor passed and reported the fixture
+  "rebuilt", which was true and meaningless.
+
+  **A check that can only run after the condition it looks for has been repaired measures
+  the repair.** It was also the fifth assertion in a release arguing that a positive must
+  be shown to fire where nothing else does — the discipline breaking inside the release
+  about the discipline, for the third time in this sequence.
+
+  The failure that can actually reach the repository is a **committed** stale fixture:
+  someone edits the stylesheet, does not run `doctor`, and commits. Their working copy is
+  fine because doctor repaired it locally; the repo carries the stale one. So the check is
+  now a git question — after the rebuild, does the committed file differ from what the
+  builder produces? Verified against exactly that scenario, which the mtime version passed.
+
+### Added
+
+- **`doctor` now runs in the weekly workflow**, after the issue is written. Every other
+  step there asks whether *this issue* is sound; none asked whether the things asking are.
+
+  Three of doctor's checks concern instance state that drifts in a live publication and
+  cannot drift in the template — cron schedules against `site.config.json`, worker name
+  against `wrangler.toml`, and the version's four homes agreeing. Those justify the step
+  in this kit's own terms. It also covers the case the instance raised: a publisher whose
+  fixtures derive from their newest issue gets a doctor result that depends on the
+  edition, and `weekly.yml` is the file they inherit.
+
+  **Placed after the write, deliberately.** The instance had this step before the write,
+  where it tested the previous edition's state and reported it as the current run's.
+
+### Checked and deliberately not adopted
+
+- Emptying `fixtures/` before each build — their class fix for generated-fixture
+  staleness. The kit's fixtures are committed and `fixtures/` is not ignored, so the kit
+  has no generated-fixture staleness surface of that shape.
+- Narrowing `kit-ci.yml`'s `paths-ignore`. They removed `issues/**` and `data/facts/**`
+  because their suite reads both. The kit's suite references `data/` only in a comment and
+  `issues/` is empty by design. **The reasoning transfers; the change does not.** Their
+  underlying rule is worth stating anyway: derive CI path filters from what the suite
+  actually opens, not from what feels like machinery.
+
+*Verified: the vacuous check demonstrated in a clean clone; its replacement driven red by
+editing the stylesheet without rebuilding, then green after `npm run fixture`. The weekly
+workflow re-parsed and the new step confirmed at index 15 of 27, after the recency step
+and before normalization. The kit's own CI checked on the remote — green for all seven
+releases in this sequence, so the doctor counts reported from local runs were accurate.
+doctor 26/26. Reasoned: nothing.*
+
 ## [0.23.0] — 2026-09-08
 
 A protocol finding from the reference instance about matched pairs themselves, checked

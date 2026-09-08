@@ -19,7 +19,7 @@
  * after cloning, to prove the kit works on your machine.
  */
 import { spawnSync, execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -636,7 +636,6 @@ const width = Math.max(...rows.map(r => r.case.length));
   const FP_MIN = Number((readFileSync(join(ROOT, 'bin', 'verify-issue.mjs'), 'utf8')
     .match(/const FP_MIN = (\d+)/) || [])[1]);
   const read = f => readFileSync(join(ROOT, 'fixtures', f), 'utf8');
-  const mtime = rel => statSync(join(ROOT, rel)).mtimeMs;
   const claims = [];
 
   const minFp = (read('ok-min-frontpage.html').match(/class="fp-item"/g) || []).length;
@@ -656,8 +655,22 @@ const width = Math.max(...rows.map(r => r.case.length));
   if (!/^development$/i.test(docket?.dockets?.open?.[0]?.class ?? ''))
     claims.push('ok-development-docket.facts.json no longer classifies its case as development');
 
-  if (mtime('fixtures/styled-issue.html') < Math.max(mtime('fixtures/house-style.css'), mtime('fixtures/good-issue.html')))
-    claims.push('styled-issue.html is older than its inputs — a leftover, not a rebuild');
+  // NOT an mtime comparison. v0.23.0 shipped one, and it was vacuous: doctor rebuilds this
+  // fixture near the top of the run, so by the time any later check reads its timestamp the
+  // file has always just been written. Proven by making house-style.css 17 seconds newer in
+  // a clean clone — doctor still passed and still reported "rebuilt", which was true and
+  // meaningless. A check that can only run after the thing it checks for has been repaired
+  // measures the repair.
+  //
+  // The failure that can actually reach the repository is a COMMITTED stale fixture: someone
+  // edits house-style.css, does not run doctor, and commits. Their working copy is fine
+  // because doctor fixed it locally; the repo carries the stale one. So the question is a git
+  // question — after the rebuild, does the committed file differ from what the builder makes?
+  const drift = git(['status', '--porcelain', 'fixtures/styled-issue.html']);
+  if (drift)
+    claims.push('styled-issue.html differs from what its builder produces — the COMMITTED fixture is ' +
+      'stale. Run `npm run fixture` and commit the result; a clean checkout is testing a file ' +
+      'that does not match its own inputs');
   if (!/<style[^>]*>[\s\S]*\.fp-rank/.test(read('styled-issue.html')))
     claims.push('styled-issue.html does not carry the inlined house stylesheet it is named for');
 
