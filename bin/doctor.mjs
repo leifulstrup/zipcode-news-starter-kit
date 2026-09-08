@@ -19,7 +19,7 @@
  * after cloning, to prove the kit works on your machine.
  */
 import { spawnSync, execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -503,17 +503,87 @@ const width = Math.max(...rows.map(r => r.case.length));
   } catch { /* handled by the assertion below */ }
 
   const orphans = [...emitted].filter(q => !defined.has(q));
-  const ok = emitted.size > 0 && orphans.length === 0;
+
+  // Second half, and the one that was missing: the instrument must not emit a band NAME the
+  // rubric does not define for that question. Comparing question NUMBERS passed while
+  // measure-issue.mjs was recording 'Weak' and 'Adequate' for Q10 — bands RUBRIC.md defines
+  // for Q1-Q7 and never for Q10 — into the measurements archive every week. A rating against
+  // a scale that does not exist reads exactly like a rating against one that does.
+  //
+  // Found by the reference instance in its own rubric (an evaluator asked for a band nobody
+  // wrote will invent one) and confirmed here in a worse form: not a human inventing a rating,
+  // a machine archiving one.
+  const PER_ISSUE_BANDS = ['Weak', 'Adequate'];
+  const src = readFileSync(join(ROOT, 'QA-QC', 'measure-issue.mjs'), 'utf8');
+  const q10Section = (rubric.match(/^\*\*Q10\s*[—-][\s\S]*?(?=^---)/m) || [''])[0];
+  const emittedBands = [...src.matchAll(/rubricBand:[\s\S]{0,400}?(?=\n\s*\w+:)/g)]
+    .flatMap(m => [...m[0].matchAll(/'([^']+)'/g)].map(x => x[1]));
+  const inventedBands = emittedBands.filter(b =>
+    PER_ISSUE_BANDS.includes(b) && !new RegExp(`\\*\\*${b}\\*\\*`).test(q10Section));
+
+  const ok = emitted.size > 0 && orphans.length === 0 && inventedBands.length === 0;
   if (!ok) failures++;
   rows.push({
     result: ok ? 'PASS' : 'FAIL',
-    case: 'the rubric defines every question the measurement emits',
+    case: 'the rubric defines every question AND every band the measurement emits',
     detail: ok
       ? `rubric Q${[...defined].sort((a,b)=>a-b).join(', Q')} · measured Q${[...emitted].sort((a,b)=>a-b).join(', Q')}`
       : emitted.size === 0
         ? 'measure-issue.mjs emitted no question keys — it did not run, or its output is not JSON'
-        : `measure-issue.mjs emits Q${orphans.join(', Q')} which RUBRIC.md does not define. ` +
-          `A measurement whose question was renamed still prints a number, which reads as evidence.`,
+        : orphans.length
+          ? `measure-issue.mjs emits Q${orphans.join(', Q')} which RUBRIC.md does not define. ` +
+            `A measurement whose question was renamed still prints a number, which reads as evidence.`
+          : `measure-issue.mjs can record Q10 as ${inventedBands.map(b => `"${b}"`).join(', ')}, ` +
+            `which RUBRIC.md defines for Q1-Q7 and not for Q10. Emit only bands the rubric defines ` +
+            `for that question, and report threshold position in a separate field.`,
+  });
+}
+
+// A path containing a space breaks two idioms, and the kit had already written the rule
+// down: bin/lib/config.mjs says "never use import.meta.url.pathname: the path may contain
+// spaces". It was then reintroduced three files away, in a different form
+// (`import.meta.url === `file://${process.argv[1]}``), by someone who had read that comment.
+// import.meta.url percent-encodes spaces; a hand-built file:// string does not, so the
+// comparison silently never matches and the CLI becomes a no-op — no error, no output, and
+// a green run. The reference instance hit the identical bug independently, in a folder named
+// "20015 Weekly Newsletter".
+//
+// A comment protects the file it sits in. Publishers clone into ~/Documents/My Newsletter/,
+// so this is a day-one failure for them. Hence a check rather than a sentence.
+{
+  const offenders = [];
+  const scan = (dir) => {
+    for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) { if (entry.name !== 'node_modules') scan(rel); continue; }
+      if (!entry.name.endsWith('.mjs')) continue;
+      // This file is excluded by construction: it contains the offending patterns as regex
+      // literals in order to look for them, and would report itself forever.
+      if (rel === 'bin/doctor.mjs') continue;
+      // Strip comments before scanning. The first version of this check flagged
+      // bin/lib/config.mjs and bin/check-recency.mjs — whose comments STATE the rule — as
+      // violations of it. A checker that cannot tell a rule from its documentation reports
+      // the places someone did the work as the places they did not.
+      const src = readFileSync(join(ROOT, rel), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, ' ')
+        .split('\n').filter(ln => !/^\s*(\/\/|\*)/.test(ln)).join('\n');
+      if (/import\.meta\.url\s*\.pathname/.test(src))
+        offenders.push(`${rel}: import.meta.url.pathname (percent-encoded — use fileURLToPath)`);
+      if (/import\.meta\.url\s*===\s*`file:\/\//.test(src))
+        offenders.push(`${rel}: compares import.meta.url to a hand-built file:// string (use pathToFileURL)`);
+      if (/`file:\/\/\$\{/.test(src))
+        offenders.push(`${rel}: builds a file:// URL by interpolation (use pathToFileURL)`);
+    }
+  };
+  scan('bin'); scan('QA-QC');
+
+  const ok = offenders.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'no script breaks when the repo path contains a space',
+    detail: ok ? 'entry points and path resolution use pathToFileURL / fileURLToPath'
+               : offenders.join('; ') + '. A path with a space makes these silently no-op.',
   });
 }
 

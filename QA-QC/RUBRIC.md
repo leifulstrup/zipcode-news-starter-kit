@@ -87,8 +87,17 @@ job.
 
 ## The rubric
 
-Each question: **Weak / Adequate / Strong**, with the evidence to look for and the
-fix if it comes back weak.
+Each of these seven: **Weak / Adequate / Strong**, with the evidence to look for and
+the fix if it comes back weak.
+
+**"These seven" is load-bearing.** The publication-level questions below carry only the
+bands they explicitly define — Q8 and Q10 define **Strong**, Q10 also defines
+**Unscored**, and Q9 defines none at all because it is a drift indicator rather than a
+score. An evaluator asked for a rating that was never written will invent one, which is
+the same hole as a dimension with no instrument awarding itself a pass: in both cases a
+number appears where no standard exists. Found in the reference instance and confirmed
+here, where it was worse — the measurement script was emitting `Weak` and `Adequate` for
+Q10 into the archive every week, bands this document does not define.
 
 ### Q1 — Traceability
 *Can a reader get from any load-bearing claim to its best available source?*
@@ -235,6 +244,13 @@ archive.
 once since it was first set. The second clause is the one that matters: compliance
 with a number you chose for yourself is not evidence, and a threshold that never
 moves is a description of your habits rather than a standard.
+
+**There is no Weak band for Q10, and that is deliberate.** A reading above the recorded
+fail threshold is caught by `bin/check-recency.mjs`, which blocks the run — the rubric
+does not need to re-express as a rating something a gate already refuses to publish.
+`QA-QC/measure-issue.mjs` reports where a reading sits relative to the thresholds as
+`thresholdState`, separately from `rubricBand`, so the archive never records a band this
+document has not defined.
 
 **Unscored** until the instance has calibrated. This kit ships no thresholds — a
 recency figure that is good for a dense civic ZIP is poor for a quiet one, so the

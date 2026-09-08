@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.21.0] — 2026-09-08
+
+Both findings came from the 20015.news session reading v0.20.0 and checking its own
+repo against it. Both were live here, and one was worse here than there.
+
+### Fixed
+
+- **The measurement was recording bands the rubric does not define.** `RUBRIC.md`
+  opens *"Each question: Weak / Adequate / Strong"* — a sentence introducing Q1–Q7
+  that was silently read as covering all ten. Q8 defines only **Strong**, Q9 defines
+  **no band at all** because it is a drift indicator rather than a score, and Q10
+  defines Strong and Unscored. So an evaluator could be asked for a rating that was
+  never written, and *an evaluator asked for a band nobody wrote will invent one.*
+
+  Here it was worse than in the instance that found it: not a human inventing a
+  rating, a machine archiving one. `QA-QC/measure-issue.mjs` emitted `Weak` and
+  `Adequate` for Q10 into `QA-QC/measurements/` every week — ratings against a scale
+  that does not exist, indistinguishable on read-back from ratings against one that
+  does. Introduced in v0.20.0, by the same change that added the Unscored-never-
+  Adequate rule for exactly this hazard, one route over.
+
+  The bands sentence now scopes itself to the seven. Q10 states that it has **no Weak
+  band** and why — a reading above the fail threshold is already refused by
+  `bin/check-recency.mjs`, and the rubric has nothing to add by re-expressing as a
+  rating something a gate will not publish. The instrument now emits `rubricBand`
+  (only what the rubric defines) separately from `thresholdState` (where the reading
+  sits), so the archive cannot record an invented band.
+
+  `doctor`'s rubric check compared question *numbers* and passed throughout. It now
+  compares **band vocabulary** too.
+
+- **A path containing a space silently disabled a script, and the rule was already
+  written down.** `bin/lib/config.mjs` has said *"never use `import.meta.url.pathname`:
+  the path may contain spaces"* since the first release. The bug was reintroduced in
+  v0.20.0 three files away in a different form — `` import.meta.url === `file://${process.argv[1]}` ``
+  — by the maintainer who had read that comment. `import.meta.url` percent-encodes
+  spaces and a hand-built string does not, so the comparison never matches, the CLI
+  becomes a no-op, and the run is green.
+
+  The reference instance hit the identical bug independently in a folder named
+  "20015 Weekly Newsletter", diagnosed it identically, and wrote its own comment about
+  it. Two repos, two sessions, one rule already recorded in each, neither protected.
+
+  **A comment protects the file it sits in and nothing else.** `doctor` now checks
+  every script under `bin/` and `QA-QC/` for the three broken idioms. Publishers clone
+  into paths like `~/Documents/My Newsletter/`, so this is a day-one failure for them.
+
+### Added
+
+- The standing rule in `data/lessons-learned.md` Part 1, including the half the
+  instance asked for by name: **silent success is the variant that survives review.**
+  An error gets investigated; a script that produces no output and no error does not,
+  and the failure looks exactly like a quiet pass.
+
+*Verified: the band check driven red by reintroducing `Weak`/`Adequate` into the Q10
+emitter, then restored. The path check driven red by reintroducing the `file://`
+template into real code, and — the direction that matters — confirmed NOT to flag
+`bin/lib/config.mjs` or `bin/check-recency.mjs`, whose comments state the rule; the
+first version of the check reported both as violations, which is a checker that cannot
+tell a rule from its documentation. doctor 23/23. Reasoned: nothing.*
+
 ## [0.20.0] — 2026-09-08
 
 The rubric gains the question it could not previously ask, now that v0.19.0 built

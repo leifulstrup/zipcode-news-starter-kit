@@ -150,7 +150,7 @@ function measureRecency() {
 
   if (!prev) {
     return { previousEdition: null, note: 'No previous edition — nothing to repeat.',
-             calibrated: !!calibration, band: 'Unscored' };
+             calibrated: !!calibration, rubricBand: 'Unscored', thresholdState: 'no previous edition' };
   }
   const o = recency.overlap(
     recency.newsSentences(readFileSync(resolve(file), 'utf8')),
@@ -164,11 +164,22 @@ function measureRecency() {
     calibrated: !!calibration,
     warnAbovePct: calibration?.warnAbovePct ?? null,
     failAbovePct: calibration?.failAbovePct ?? null,
-    // Never "Adequate" by default: an uncalibrated dimension has no instrument, and a
-    // band awarded without one is the impression this rubric exists to replace.
-    band: calibration ? (o.pct > calibration.failAbovePct ? 'Weak'
-                       : o.pct > calibration.warnAbovePct ? 'Adequate' : 'candidate for Strong')
-                      : 'Unscored',
+    // Two fields, because they answer different questions and conflating them invented a
+    // standard. `rubricBand` may only ever hold a band RUBRIC.md actually defines for Q10 —
+    // Strong (or candidacy for it) and Unscored. An earlier version emitted 'Weak' and
+    // 'Adequate' here, which this document defines for Q1-Q7 and not for Q10, so the archive
+    // was recording ratings against a scale that did not exist. An evaluator reading them back
+    // would have had no way to know.
+    //
+    // Where a reading sits against the thresholds is real and worth archiving — it is just not
+    // a band. A reading above fail is already refused by bin/check-recency.mjs, so the rubric
+    // has nothing to add by re-expressing it as a rating.
+    rubricBand: calibration
+      ? (o.pct <= calibration.warnAbovePct ? 'candidate for Strong' : 'not a candidate for Strong')
+      : 'Unscored',
+    thresholdState: !calibration ? 'uncalibrated'
+      : o.pct > calibration.failAbovePct ? 'above fail'
+      : o.pct > calibration.warnAbovePct ? 'above warn' : 'below warn',
     note: calibration
       ? 'Strong also requires the trailing four issues under warn AND a threshold that has ratcheted down at least once — judge that from the measurements archive, not from this issue.'
       : 'Uncalibrated. Run: node bin/check-recency.mjs --calibrate (needs 3+ issues).',

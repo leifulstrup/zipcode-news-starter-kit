@@ -58,6 +58,24 @@ county or state is a different jurisdiction — different police, schools,
 government; check which side of the line every such item is on.
 
 **On verification machinery.**
+A gate whose failure prints no line cannot be tested — you cannot tell its failure
+from anyone else's, so every gate says what to do about it and every check prints a
+row whether it passed or not. **Read the artifact, not the report of the artifact:**
+`$?` after a pipe reports the pipe; a release-creation command reports success on an
+empty body; a local file is not what the remote serves; and your own note that a tree
+was clean is not the tree. The authoritative surface is often on a remote you have to
+fetch back. The variant that survives review is **silent success** — an error gets
+investigated, a script that produces no output and no error does not, and the failure
+looks exactly like a quiet pass. Test every new gate against a real failing case and
+watch it go red for the right reason before trusting it; a green check on a gate you
+just wrote proves nothing. Prove a permitted case too — a negative fixture shows bad
+input fails and never shows that allowed input still passes, which is how a gate drifts
+away from the brief it was written for. **A rule written into a comment protects the
+file it sits in and nothing else**: this repo told itself never to parse
+`import.meta.url` as a path because paths contain spaces, and the same bug was written
+three files away two days later, by the maintainer who had read it. If it is
+enforceable in code, enforce it in code — `doctor` checks that entry points use
+`pathToFileURL`, because the prose did not hold.
 Documented is not working: field names can be read from a service definition, but
 only execution tells you what the query parser accepts. Assert what the answer
 should *look like*, not merely that an answer arrived — a plausibility threshold is
