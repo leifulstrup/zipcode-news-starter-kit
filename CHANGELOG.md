@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.23.0] — 2026-09-08
+
+A protocol finding from the reference instance about matched pairs themselves, checked
+here and live. **Both defects were in `doctor` — the thing that checks everything else.**
+
+### Fixed
+
+- **The fixture builder's exit status was discarded, so a dead builder was tested as a
+  leftover.** `bin/doctor.mjs` regenerates `fixtures/styled-issue.html` before the two
+  checks that read it, under a comment reading *"Regenerate first: a stale styled fixture
+  would prove the wrong thing."* Nothing enforced that sentence. Replacing the builder
+  with `process.exit(3)` left doctor **green at 25/25**, with both dependent checks
+  reporting PASS against the previous run's file. Nothing errored at any point.
+
+  A stated intent that nothing checks is the same defect as a rule living only in a
+  comment — the third time that shape has surfaced here in four days, after
+  `config.mjs` and the verdict rule. The status is now checked and a failed rebuild is
+  a loud FAIL naming the leftover.
+
+### Added
+
+- **`doctor` asserts that every positive fixture contains what its name claims**, which
+  is the assertion the gate-off control run cannot make. Disabling a gate proves a
+  *negative* fixture failed because of that gate; for a *positive* it proves nothing,
+  because removing a gate can only make things pass **more**. A positive that is stale,
+  or that a transform quietly reshaped when an anchor moved, sails through the gate-off
+  run exactly like a correct one.
+
+  So each is now checked against its own claim: the minimum front page has exactly
+  `FP_MIN` items, the characterised fatality fixture still states a count and still
+  carries the second source that is the pair's only variable, the development docket is
+  still classed development, and the generated fixture is newer than its inputs and
+  actually carries the stylesheet.
+
+  **The decisive test for this was not the obvious one.** Deleting the second source from
+  the fatality fixture was caught by the existing pair as well, so it demonstrates
+  nothing about the new check. The mutation that isolates it: give
+  `ok-min-frontpage.html` a fourth item. Four is inside the permitted 3–6, so `verify`
+  still **accepts** it and every prior check reported PASS — while the fixture had
+  stopped being the boundary case it exists to guard. Exists, passes, and is no longer
+  the thing you meant.
+
+*Verified: the builder-status check driven by replacing the builder with `process.exit(3)`
+— doctor was 25/25 green before this release and is a named FAIL after it. The content
+check driven by the four-item mutation above, with `verify` confirmed to still accept the
+mutated fixture, so the catch is attributable to the new check alone. doctor 26/26.
+Reasoned: nothing.*
+
 ## [0.22.0] — 2026-09-08
 
 The last item from the reference instance's docket-privacy findings. **Most of that

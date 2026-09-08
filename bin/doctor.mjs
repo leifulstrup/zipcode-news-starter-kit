@@ -19,7 +19,7 @@
  * after cloning, to prove the kit works on your machine.
  */
 import { spawnSync, execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -230,8 +230,26 @@ try {
 // (and in CI, which installs it for the PDF) it catches the class of failure
 // every text-based gate is blind to.
 {
-  // Regenerate first: a stale styled fixture would prove the wrong thing.
-  spawnSync(process.execPath, ['bin/make-styled-fixture.mjs'], { cwd: ROOT, encoding: 'utf8' });
+  // Regenerate first: a stale styled fixture would prove the wrong thing. That sentence was
+  // here from the start and nothing enforced it — the builder's exit status was discarded,
+  // so a builder that died left the PREVIOUS run's fixture on disk and both checks reading
+  // it reported PASS against it. Verified by replacing the builder with `process.exit(3)`:
+  // doctor stayed green at 25/25 and nothing errored anywhere.
+  //
+  // A stated intent that nothing checks is the same defect as a rule living only in a
+  // comment. Found by the reference instance, whose own single positive fixture had quietly
+  // stopped building two days earlier and was being tested as a leftover.
+  const built = spawnSync(process.execPath, ['bin/make-styled-fixture.mjs'], { cwd: ROOT, encoding: 'utf8' });
+  if (built.status !== 0) {
+    failures++;
+    rows.push({
+      result: 'FAIL',
+      case: 'the styled fixture rebuilt before it was tested',
+      detail: `bin/make-styled-fixture.mjs exited ${built.status}. Any styled-issue.html on disk is LEFT ` +
+        `OVER from an earlier run, so every check reading it passed against the wrong file. ` +
+        String(built.stderr || '').trim().split('\n')[0],
+    });
+  }
   const rc = spawnSync(process.execPath, ['bin/render-check.mjs'], { cwd: ROOT, encoding: 'utf8' });
   const out = (rc.stdout ?? '') + (rc.stderr ?? '');
   const skipped = /SKIPPED/.test(out);
@@ -603,6 +621,53 @@ const width = Math.max(...rows.map(r => r.case.length));
     case: 'no script breaks when the repo path contains a space',
     detail: ok ? 'entry points and path resolution use pathToFileURL / fileURLToPath'
                : offenders.join('; ') + '. A path with a space makes these silently no-op.',
+  });
+}
+
+// Every POSITIVE fixture must contain what its name says. This is the assertion a gate-off
+// control run cannot make: disabling a gate proves a NEGATIVE fixture failed BECAUSE of that
+// gate, but for a positive it proves nothing at all, because removing a gate can only make
+// things pass MORE. A positive that is stale, or that a transform quietly reshaped when an
+// anchor moved, sails through the gate-off run exactly like a correct one. So a positive's
+// non-vacuity rests on three things the control run does not supply: it exists, it IS what it
+// claims, and it passes with the gate ON. This asserts the middle one. (Protocol point from
+// the reference instance, after finding its own positive fixture was two days stale.)
+{
+  const FP_MIN = Number((readFileSync(join(ROOT, 'bin', 'verify-issue.mjs'), 'utf8')
+    .match(/const FP_MIN = (\d+)/) || [])[1]);
+  const read = f => readFileSync(join(ROOT, 'fixtures', f), 'utf8');
+  const mtime = rel => statSync(join(ROOT, rel)).mtimeMs;
+  const claims = [];
+
+  const minFp = (read('ok-min-frontpage.html').match(/class="fp-item"/g) || []).length;
+  if (minFp !== FP_MIN)
+    claims.push(`ok-min-frontpage.html has ${minFp} front-page items, not FP_MIN (${FP_MIN})`);
+
+  const fatality = read('ok-fatality-count-characterised.html');
+  const sec = fatality.match(/Public Safety[\s\S]*?<div class="srcs">([\s\S]*?)<\/div>/);
+  const srcCount = sec ? (sec[1].match(/<li id=/g) || []).length : 0;
+  if (!/homicides have been recorded/.test(fatality))
+    claims.push('ok-fatality-count-characterised.html no longer states a fatality count');
+  if (srcCount < 2)
+    claims.push(`ok-fatality-count-characterised.html has ${srcCount} source(s) in that section — ` +
+      `the second one IS the pair's variable, so without it the fixture proves nothing`);
+
+  const docket = JSON.parse(read('ok-development-docket.facts.json'));
+  if (!/^development$/i.test(docket?.dockets?.open?.[0]?.class ?? ''))
+    claims.push('ok-development-docket.facts.json no longer classifies its case as development');
+
+  if (mtime('fixtures/styled-issue.html') < Math.max(mtime('fixtures/house-style.css'), mtime('fixtures/good-issue.html')))
+    claims.push('styled-issue.html is older than its inputs — a leftover, not a rebuild');
+  if (!/<style[^>]*>[\s\S]*\.fp-rank/.test(read('styled-issue.html')))
+    claims.push('styled-issue.html does not carry the inlined house stylesheet it is named for');
+
+  const ok = claims.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'every positive fixture contains what its name claims',
+    detail: ok ? `${FP_MIN}-item front page · fatality count with ${srcCount} sources · development docket · styled fixture rebuilt`
+               : claims.join('; '),
   });
 }
 
