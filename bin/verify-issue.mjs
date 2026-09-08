@@ -477,6 +477,24 @@ if (citedCases.size) {
       ...(facts.dockets.open || []).map(c => String(c.caseNumber)),
       ...(facts.dockets.decided || []).map(c => String(c.caseNumber)),
     ]);
+    // Provenance is not permissibility. The check below asks whether an identifier came
+    // from a real fetch; it cannot ask whether it should have been fetchable. An adapter
+    // that classifies its docket (adapters/README §6b) can say so per entry, and then this
+    // gate can refuse the citation — a residential case number is one lookup from the
+    // household at its own address, which is why those cases are a count and not a list.
+    const isResidential = c =>
+      c?.residential === true || /^residential$/i.test(String(c?.class ?? c?.category ?? ''));
+    const residentialIds = new Set(
+      [...(facts.dockets.open || []), ...(facts.dockets.decided || [])]
+        .filter(isResidential).map(c => String(c.caseNumber)));
+    const citedResidential = [...citedCases].filter(c => residentialIds.has(c));
+    need(citedResidential.length === 0,
+      `Residential record identifier(s) cited: ${citedResidential.join(', ')}. The docket fetch marked ` +
+      `these residential, and residential cases are reported as a COUNT with a link to the portal's case ` +
+      `search — never a number, never an applicant, never a block. The identifier carries no name and ` +
+      `resolves at the portal to one, usually a resident at their own address. See prompts/write-issue.md ` +
+      `rule 1 and bin/adapters/README.md §6b.`);
+
     const unauthorized = [...citedCases].filter(c => !authorized.has(c));
     need(unauthorized.length === 0,
       `Record identifier(s) cited that the docket fetch did not authorize: ${unauthorized.join(', ')}. ` +

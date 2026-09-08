@@ -121,6 +121,45 @@ decides whether something is publishable must **fail closed** (unpublishable unl
 positively identified as safe): the inputs that defeat a keyword classifier are the
 ones carrying the least information, and those are common.
 
+## 6b. A record with no forbidden field can still identify someone
+
+§6 keeps personal data out of the *fields*. This rule is about the *identifier*, and it
+is the one an adapter author is most likely to miss, because a case number looks like
+metadata rather than like information about a person.
+
+**An identifier is one lookup from a name.** A zoning or permit case number is public,
+carries no name in the payload, and resolves at the source portal to an application
+showing the applicant — usually a resident, at their own address. Publish the number for
+a case on a private home and you have published the household, with an extra click in
+between. A sub-neighborhood unit narrows the same way: a single-member district or a
+named block group is a few streets.
+
+So a docket adapter **classifies before it publishes**, and the two classes leave the
+adapter in different shapes:
+
+- **Development, commercial, institutional, map amendments** — full identifiers. These
+  concern buildings and companies, the applicant is an entity, and the identifier is the
+  thing that lets a reader check the record. Put them in `facts.dockets` normally.
+- **Residential** — a **count only**, and a link to the portal's own case search. Never
+  the number, never the applicant, never the block. Publish the count in its own field
+  (`facts.dockets.residentialCount`), not as entries anyone could cite.
+
+**Why this belongs to the adapter and not to the writer.** `bin/verify-issue.mjs` fails
+the run on any identifier the fetch did not authorize — but it authorizes *everything the
+adapter published*. It checks **provenance, not permissibility**: that a number came from
+a real fetch, never that it should have been fetchable in the first place. The brief tells
+the writer residential cases are aggregate-only; if a residential case number is sitting
+in `facts.dockets`, the gate will wave it through, because as far as the gate can tell it
+is a legitimate fetched record. **The last point at which that decision can be made is
+here.**
+
+And the classifier fails closed, per §6: residential unless positively identified as
+development. The reference project's first version required a positive *residential*
+match and released an appeal whose description was purely procedural — no zone, no
+dwelling, nothing to match on — filed by the same household as a companion case on their
+home. The description carried no signal precisely because it was routine, which is the
+common case, not the rare one.
+
 ## 7. Snapshot silently-revising sources
 
 Commercial estimate feeds (home-value indexes and the like) recompute their whole

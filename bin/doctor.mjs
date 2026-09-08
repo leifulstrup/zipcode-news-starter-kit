@@ -76,6 +76,25 @@ const CASES = [
     expectMessage: /Sources for this section/i,
   },
   {
+    // A second matched pair. Same issue, same case number; the ONLY difference is how the
+    // docket fetch classified it. A residential case number is one lookup from a household
+    // at its own address, so those cases are a count and not a list (adapters/README §6b).
+    // The pair is what proves the gate keys on the CLASSIFICATION rather than on the mere
+    // presence of a docket number — a lone negative fixture would pass just as well against
+    // a gate that banned every cited identifier, which would be useless and look identical.
+    name: 'verify rejects citing a docket number the fetch marked residential',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-residential-docket-cited.html',
+          '--facts', 'fixtures/bad-residential-docket.facts.json'],
+    expectExit: 1,
+    expectMessage: /Residential record identifier/i,
+  },
+  {
+    name: 'verify accepts the same docket number when the fetch marked it development',
+    cmd: ['bin/verify-issue.mjs', '--file', 'fixtures/bad-residential-docket-cited.html',
+          '--facts', 'fixtures/ok-development-docket.facts.json'],
+    expectExit: 0,
+  },
+  {
     // A MATCHED PAIR, which is the whole test: the two fixtures carry the same claim in
     // the same words, and differ only in whether a second narrative source sits in the
     // section. One must fail and one must pass. A single negative fixture would prove the

@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.22.0] — 2026-09-08
+
+The last item from the reference instance's docket-privacy findings. **Most of that
+doctrine turned out to be here already** — the gap was narrower and more structural
+than the handoff or my own summary of it suggested, and finding that out changed what
+got built.
+
+Already present, across three files: residential cases reported as a count only, never
+a case number or applicant (`prompts/write-issue.md` rule 1); the fail-closed classifier
+and *"the inputs that defeat a keyword classifier carry the least information"*
+(`bin/adapters/README.md` §6); and the identifier gate, whose comment already named the
+re-identification mechanism (`bin/verify-issue.mjs`).
+
+### Added
+
+- **`bin/adapters/README.md` §6b — a record with no forbidden field can still identify
+  someone.** §6 keeps personal data out of the *fields*. This is about the *identifier*,
+  which an adapter author is most likely to miss because a case number looks like
+  metadata rather than like information about a person. It is one lookup from a name: a
+  residential zoning case carries no applicant in the payload and resolves at the portal
+  to an application showing a resident, at their own address.
+
+  **The reason this belongs to the adapter and not the writer is the finding.**
+  `bin/verify-issue.mjs` fails the run on any identifier the fetch did not authorize —
+  but it authorizes *everything the adapter published*. It checks **provenance, not
+  permissibility**: that a number came from a real fetch, never that it should have been
+  fetchable. The brief tells the writer residential cases are aggregate-only; if a
+  residential case number is sitting in `facts.dockets`, the gate waves it through,
+  because as far as it can tell that is a legitimate fetched record. The adapter is the
+  last point at which the decision can be made, and nothing told the adapter author so.
+
+- **The rule is now enforceable rather than advisory.** An adapter that classifies its
+  docket can mark an entry `residential: true` (or `class: "residential"`), and the gate
+  refuses any citation of it. Harmless when absent, so no existing adapter changes; it
+  gives the convention teeth the moment one adopts it.
+
+- **A second matched pair in `doctor`**, and the pair is the point: the same issue text
+  citing the same case number, against two facts files differing only in how the fetch
+  classified it. One must fail and one must pass. A lone negative fixture would pass
+  equally against a gate that banned *every* cited identifier — useless, and
+  indistinguishable from this one without the positive half.
+
+*Verified: the pair driven both ways, and the gate disabled to confirm the failing
+fixture goes green while the passing one stays green — so the passing case does not
+depend on the gate being on. doctor 25/25. Reasoned: nothing.*
+
 ## [0.21.1] — 2026-09-08
 
 Two corrections to the rubric, both flagged by the 20015.news session and both live

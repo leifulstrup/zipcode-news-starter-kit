@@ -1,0 +1,15 @@
+{
+  "week": "2026-09-04",
+  "generator": "bin/fetch-data.mjs",
+  "zip": "00000",
+  "queriedAt": "2026-09-04T13:00:00Z",
+  "errors": [],
+  "notes": [
+    "FIXTURE: the docket fetch classified ZC-2026-114 as residential. Paired with ok-development-docket.facts.json, which differs only in that classification. verify-issue.mjs must FAIL this one and PASS that one — the issue text is identical in both."
+  ],
+  "dockets": {
+    "open": [{ "caseNumber": "ZC-2026-114", "residential": true }],
+    "decided": [],
+    "residentialCount": 1
+  }
+}

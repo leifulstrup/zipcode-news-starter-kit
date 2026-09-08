@@ -1,0 +1,14 @@
+{
+  "week": "2026-09-04",
+  "generator": "bin/fetch-data.mjs",
+  "zip": "00000",
+  "queriedAt": "2026-09-04T13:00:00Z",
+  "errors": [],
+  "notes": [
+    "FIXTURE: the same case number, classified by the fetch as development. A development identifier is what a reader needs to check the record, so citing it must PASS. The pair proves the gate keys on the classification and not on the presence of a docket number."
+  ],
+  "dockets": {
+    "open": [{ "caseNumber": "ZC-2026-114", "class": "development" }],
+    "decided": []
+  }
+}
