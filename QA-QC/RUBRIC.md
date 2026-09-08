@@ -213,22 +213,41 @@ bad faith if it slips.
 
 ---
 
-## Publication-level, checked quarterly rather than per issue
+## Publication-level — not scored per issue, each on its own cadence
+
+**A section heading is a claim like any other.** This one read "checked quarterly rather
+than per issue" until v0.20.0 put Q10 underneath it with an instrument that runs every
+week, and the heading became false the moment that landed. Same defect as the verdict
+rule one level up, one structural level higher: a statement about a group, left behind by
+a change to a member. Each question below now states its own cadence, so there is nothing
+for a new one to falsify. (Found by the reference instance, which hit it on the same edit
+— adding Q10 is what creates it.)
 
 **Q8 — Accuracy record.** Trailing eight issues in `data/accuracy-log.md`: three
 claims per issue verified against their cited source, categorized
 correct / misleading / wrong. **Strong** = no wrong claims and at most one
 misleading per issue. This is the standard for removing "(Experimental)" from the
-masthead — see `data/accuracy-log.md` for the procedure.
+masthead — see `data/accuracy-log.md` for the procedure. **Cadence: on demand, when
+the label is under consideration.**
 
-**Q9 — Source mix.** Monthly: what share of items originate in government data,
+**A trailing-eight-issue record is a verdict on history, not on this edition**, and it
+must not be read as one. A wrong claim published two months ago and corrected the next
+week still sits inside the window: it is a true fact about the publication's record and
+it says nothing about whether today's issue is sound. That is why the verdict rule scopes
+blocking to Q1–Q7 — a clean issue is publishable while Q8 is still carrying an old error,
+and the old error still correctly delays the label coming off. Those are different
+questions and the window governs only the second. (The distinction is the reference
+instance's; the same shape as Q10 blocking a quiet week, which is what led them to it.)
+
+**Q9 — Source mix.** **Cadence: monthly.** What share of items originate in government data,
 official releases, civic associations, local business, and residents. Not a
 per-issue score — a drift indicator. Heavy dependence on machine-readable official
 sources is institutional bias wearing a different costume: an automated pipeline's
 appetite is set by data availability rather than news judgement, so what is easiest
 to query will quietly dominate what gets written unless you watch for it.
 
-**Q10 — Recency.** *What share of this issue is new since the last one?*
+**Q10 — Recency.** **Cadence: measured every issue, judged across four.**
+*What share of this issue is new since the last one?*
 Every other question here asks whether an issue is internally sound. An issue can
 score Strong on all seven and be a verbatim reprint: every claim sourced, every
 uncertainty admitted, every geography correct, and nothing in it new. For a weekly

@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.21.1] — 2026-09-08
+
+Two corrections to the rubric, both flagged by the 20015.news session and both live
+here. One was a falsehood this kit shipped in v0.20.0.
+
+### Fixed
+
+- **A section heading that stopped being true.** `RUBRIC.md` read *"Publication-level,
+  checked quarterly rather than per issue"* — and v0.20.0 put Q10 underneath it with an
+  instrument that runs in the weekly workflow. The heading became false the moment that
+  landed, and nothing noticed, because a heading is not the kind of thing anyone
+  re-reads when adding a member to the group it describes.
+
+  This is the verdict-rule defect one structural level up: **a statement about a group,
+  left behind by a change to a member.** The verdict rule said "no question is Weak"
+  while ranging over questions that had no Weak band; the heading asserted a cadence for
+  questions that no longer shared one. Each question now states its own cadence, so
+  there is nothing left for a new one to falsify. The instance hit this on the same edit
+  — adding Q10 is what creates it — which is why they were able to warn about it.
+
+- **Q8 now says what a trailing window governs.** A trailing-eight-issue accuracy record
+  is a **verdict on history, not on this edition**. A wrong claim published two months
+  ago and corrected the following week still sits inside the window: it is a true fact
+  about the record and says nothing about whether today's issue is sound.
+
+  v0.20.0 already scoped blocking to Q1–Q7, so this was not a live failure here — but
+  the rubric never said *why*, which left the right behaviour resting on a reader
+  inferring it. Now stated: a clean issue publishes while Q8 still carries an old error,
+  and that old error still correctly delays "(Experimental)" coming off. Different
+  questions; the window governs only the second. The instance's finding, and the same
+  shape as Q10 blocking a quiet week.
+
+*Verified: doctor 23/23; the band-vocabulary check still passes with the reworded
+sections, confirming the edits did not introduce a band. Reasoned: nothing.*
+
 ## [0.21.0] — 2026-09-08
 
 Both findings came from the 20015.news session reading v0.20.0 and checking its own
