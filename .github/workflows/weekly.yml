@@ -120,6 +120,15 @@ jobs:
           echo "week=$WEEK" >> "$GITHUB_OUTPUT"
           echo "Issue date: $WEEK"
 
+      # Milliseconds, no network, and it guards the most expensive failure this design has
+      # had. package-lock.json is tracked and must agree with package.json; if it does not,
+      # the install below either rewrites it mid-run — dirtying the tree so the final push
+      # cannot happen, discarding a finished issue — or refuses to run. Either way the right
+      # moment to say so is here, before a single API call. The message names the one command
+      # that fixes it.
+      - name: The lockfile must agree with package.json
+        run: node bin/check-lockfile.mjs
+
       # ---------------------------------------------------------------
       # 1. FACTS — deterministic. No model involved.
       # ---------------------------------------------------------------
@@ -353,9 +362,20 @@ jobs:
       # `npx playwright install` alone fetches the binary but leaves the repo
       # without the module — html-to-pdf.mjs then dies on ERR_MODULE_NOT_FOUND
       # after a 28-second browser download already succeeded.
+      #
+      # `npm ci`, NOT `npm install`, and the difference is a whole edition. `npm install`
+      # WRITES package-lock.json — it syncs the name and version fields to package.json as a
+      # side effect of installing. package-lock.json is tracked, this step runs AFTER the
+      # issue is written and gated, and the Commit step stages a few paths by name. So a
+      # two-line lockfile rewrite leaves the tree dirty, `git rebase origin/main` refuses to
+      # start, and a finished issue is thrown away at the last step. That happened to the
+      # reference implementation on 2026-09-11; this kit had the same defect and could not
+      # see it, because the template's own weekly run stops at the placeholder-ZIP preflight.
+      # `npm ci` installs FROM the lockfile and never writes it, so this step cannot dirty
+      # the tree. The preflight above catches a lockfile that has drifted.
       - name: Install Playwright and Chromium for the PDF
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Render the PDF
@@ -456,6 +476,32 @@ jobs:
           fi
           git commit -m "Issue of ${{ steps.date.outputs.week }} (${AGENT})"
 
+          # Anything still dirty here is a tracked file some TOOL in this run wrote to, and
+          # that the `git add`s above deliberately did not stage. git rebase REFUSES TO START
+          # against it — "cannot rebase: You have unstaged changes" — and that is how the
+          # reference implementation lost a complete, gate-green edition on 2026-09-11 over
+          # two lines of package-lock.json. `npm ci` above removes that specific cause and the
+          # preflight catches the drift behind it; this is the general guard, for the next tool
+          # that writes somewhere nobody expected.
+          #
+          # Named in a warning that reaches the run Summary, then set aside so the push can
+          # proceed. This does NOT weaken the rubric/machinery guard: that step has already run
+          # and passed, so nothing it protects can be in this list. What is left is a tool's
+          # scribble in a throwaway checkout, and losing a week's issue to it is the worse of
+          # the two outcomes.
+          DIRTY="$(git status --porcelain --untracked-files=no)"
+          if [ -n "$DIRTY" ]; then
+            echo "::warning::A tool in this run modified tracked files that the Commit step does \
+          not stage. They are being set aside so this issue can still be published, but something \
+          in the pipeline is writing where it should not: $(echo "$DIRTY" | tr '\n' ' ')"
+            echo "$DIRTY"
+            git stash push --quiet --message "set aside by the Commit step" -- . || {
+              echo "::error::Could not set aside the modified files listed above, so the push " \
+                   "cannot proceed. The issue is built and uploaded as a run artifact."
+              exit 1
+            }
+          fi
+
           # The runner checked out a SHA and then worked for many minutes. Any
           # push to main during that window makes this push fail "fetch first" —
           # discarding the whole edition at the very last step, after the
@@ -464,9 +510,22 @@ jobs:
           # genuine conflict aborts loudly rather than resolving itself wrongly.
           for attempt in 1 2 3; do
             git fetch origin main
-            if ! git rebase origin/main; then
-              git rebase --abort || true
-              echo "::error::Rebase conflict against origin/main. The issue is built and uploaded as a run artifact — recover it from there rather than re-running the agent, which costs another full research pass."
+            # Captured, because a rebase can fail for two very different reasons and the old
+            # message asserted one of them. For a day the reference implementation's failure
+            # was blamed on the wrong file, because the log said "conflict" about a rebase
+            # that never began. Report what git actually said.
+            if ! REBASE_OUT="$(git rebase origin/main 2>&1)"; then
+              echo "$REBASE_OUT"
+              git rebase --abort 2>/dev/null || true
+              if echo "$REBASE_OUT" | grep -qi 'unstaged changes\|cannot rebase\|uncommitted'; then
+                echo "::error::git refused to START a rebase because the working tree is dirty. " \
+                     "This is NOT a merge conflict — some tool in this run wrote to a tracked " \
+                     "file after the commit, and the output above names it. The issue is built " \
+                     "and uploaded as a run artifact — recover it from there rather than " \
+                     "re-running the agent, which costs another full research pass."
+              else
+                echo "::error::Rebase conflict against origin/main. The issue is built and uploaded as a run artifact — recover it from there rather than re-running the agent, which costs another full research pass."
+              fi
               exit 1
             fi
             if git push origin HEAD:main; then

@@ -1,5 +1,90 @@
 # Changelog
 
+## [0.26.0] — 2026-09-12
+
+**Every copy of this kit would have failed on its first publication, and the template
+could not see it.** Found in the reference implementation, which lost a finished edition
+to it on 2026-09-11, and then found here — same defect, worse shape.
+
+### Fixed
+
+**`npm install` in the PDF step rewrote a tracked file, and the final push then could not
+happen.** The chain is worth reading whole, because no single link looks like a
+publication risk:
+
+`package-lock.json` is tracked by git. `npm install` *writes* it — it syncs the `name` and
+`version` fields to `package.json` as a side effect of installing. The weekly run installs
+Playwright to render the PDF, which happens **after** the issue is researched, written and
+gated. The Commit step stages a few paths by name and deliberately does not `git add -A`.
+So the commit succeeded and the rebase before the push refused to start:
+
+```
+error: cannot rebase: You have unstaged changes.
+```
+
+and a complete, gate-green edition — issue, PDF, addendum, facts — was discarded at the
+last step of the run.
+
+This kit's lockfile carried **no `version` field at all** while `package.json` said
+`0.25.0`, so the first `npm install` of every configured copy would have added two lines
+and armed the failure. It could not surface here: the template's own weekly run stops at
+the placeholder-ZIP preflight, so the failing step never executes in this repository. A
+defect invisible in the template and fatal on first real use is the worst shape a starter
+kit can carry.
+
+Fixed at every link, because removing one is not the same as understanding it:
+
+- **`npm ci`, not `npm install`.** `npm ci` installs *from* the lockfile and never writes
+  it, so the step cannot dirty the tree whatever state the lockfile is in.
+- **`bin/check-lockfile.mjs`** — the lockfile must agree with `package.json` on `name` and
+  `version` (in both of the fields npm writes) and must record every declared dependency.
+  Runs in `kit-ci.yml` and as a weekly preflight before a single API call. `npm ci` makes
+  the symptom impossible but exits 0 on a drifted lockfile; this names the fault, and names
+  the one command that fixes it.
+- **The Commit step no longer loses an issue to a scribble.** Tracked files left modified
+  after the commit are named in a warning that reaches the run Summary and set aside so the
+  push proceeds. This does not weaken the machinery guard: that step has already run and
+  passed, so nothing it protects can be in the list.
+- **A rebase that never began is no longer reported as a conflict.** The output is captured
+  and the two causes get different errors. In the reference implementation the wrong file
+  was suspected for a day because the log named the wrong cause.
+
+**The version check was called "the version agrees everywhere it appears" and enumerated
+four documents.** CHANGELOG, README prose, the git tag — and `package.json` itself. It did
+not look at `package-lock.json`, which is the one place the version is *machine-readable*
+and the only one whose drift costs a publication rather than confusing a reader. It now
+delegates to `check-lockfile.mjs` rather than re-typing the comparison. **A list of
+"everywhere" is only ever the places someone thought of; when one of them is machine-
+readable, check it with a program and not with a list.**
+
+### Verified
+
+- `doctor` 27 checks green, up from 26.
+- The new check driven red on six distinct drift shapes — each version field absent, each
+  stale, the name drifted, a declared dependency the lockfile has never seen, and a
+  dependency recorded but unresolved — green on a matching pair, and exit 2 rather than a
+  pass when the lockfile is absent. Mutated to read only the top-level fields, the naive
+  version of this check: two shapes go uncaught and the case goes red, which is why both
+  fields are read.
+- `doctor` driven red against the lockfile **as this kit actually shipped it**, and green
+  again after the one-command fix.
+- The Commit step extracted from `weekly.yml` and run against a throwaway repository in the
+  exact failing scenario: it now publishes, with the warning naming `package-lock.json`.
+- `npm install` vs `npm ci` measured against the drifted lockfile: `install` leaves
+  ` M package-lock.json`, `ci` leaves the tree clean.
+
+### For existing copies
+
+Run `/update-kit`. If you would rather do it by hand, the whole fix for an already-created
+copy is:
+
+```
+npm install --package-lock-only --no-audit --no-fund
+node bin/check-lockfile.mjs          # must print "agrees with package.json"
+```
+
+and commit `package-lock.json`. The workflow changes come with the update.
+
 ## [0.25.0] — 2026-09-08
 
 The standing rules from an eight-release sequence, distilled into Part 1 where a

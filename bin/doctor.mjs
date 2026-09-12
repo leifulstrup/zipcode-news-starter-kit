@@ -19,7 +19,8 @@
  * after cloning, to prove the kit works on your machine.
  */
 import { spawnSync, execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT } from './lib/config.mjs';
 
@@ -453,6 +454,22 @@ const width = Math.max(...rows.map(r => r.case.length));
     problems.push(`README.md restates a version ("${restated[0]}") instead of pointing at package.json — ` +
       `it will drift, and the drift is silent`);
   }
+  // package-lock.json — the place this check did not look, and the only one whose drift
+  // can cost a publication rather than confuse a reader. This case was called "the version
+  // agrees everywhere it appears" while enumerating CHANGELOG, README prose and the tag:
+  // three documents. npm records the version in the lockfile too, `npm install` rewrites it
+  // mid-run, and the lockfile is tracked — so the drift this case was blind to is the one
+  // that dirties the tree at the Commit step and throws away a finished issue. A list of
+  // "everywhere" is only ever the places someone thought of; when one of them is machine-
+  // readable, delegate to the checker rather than re-typing the comparison here.
+  const lock = spawnSync('node', [join(ROOT, 'bin/check-lockfile.mjs')],
+    { encoding: 'utf8', cwd: ROOT });
+  if (lock.status !== 0) {
+    problems.push(`package-lock.json disagrees with package.json — run ` +
+      `\`npm install --package-lock-only --no-audit --no-fund\` and commit it ` +
+      `(node bin/check-lockfile.mjs says what and why)`);
+  }
+
   // The tag is advisory: it legitimately lags between the version bump and the release.
   const latestTag = git(['describe', '--tags', '--abbrev=0']);
   const tagNote = latestTag && latestTag !== `v${pkgVersion}`
@@ -464,7 +481,7 @@ const width = Math.max(...rows.map(r => r.case.length));
     case: 'the version agrees everywhere it appears',
     detail: problems.length
       ? problems.join('; ') + '. Keep package.json as the single authority.'
-      : `${pkgVersion}${tagNote}`,
+      : `${pkgVersion}${tagNote} · package.json, CHANGELOG, README, package-lock.json`,
   });
 }
 
@@ -680,6 +697,75 @@ const width = Math.max(...rows.map(r => r.case.length));
     result: ok ? 'PASS' : 'FAIL',
     case: 'every positive fixture contains what its name claims',
     detail: ok ? `${FP_MIN}-item front page · fatality count with ${srcCount} sources · development docket · styled fixture rebuilt`
+               : claims.join('; '),
+  });
+}
+
+
+/* --------- the lockfile check, driven red ---------
+   bin/check-lockfile.mjs guards the defect that cost the reference implementation a finished
+   edition on 2026-09-11 and that this kit shipped too: a tracked package-lock.json that
+   `npm install` rewrites mid-run, dirtying the tree so the final push cannot happen.
+
+   Driven against throwaway directories, not this checkout — the assertion is that the check
+   goes RED on drift, and this repo had better be green. Every field is driven independently,
+   because a check that read only one of them would pass a lockfile npm was still about to
+   rewrite, which is the same silent green as no check at all. */
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'kit-lockfile-'));
+  const run = d => spawnSync('node', [join(ROOT, 'bin/check-lockfile.mjs'), '--dir', d],
+    { encoding: 'utf8' });
+  const make = (name, pkg, lock) => {
+    const d = join(tmp, name);
+    mkdirSync(d, { recursive: true });
+    writeFileSync(join(d, 'package.json'), JSON.stringify(pkg));
+    writeFileSync(join(d, 'package-lock.json'), JSON.stringify(lock));
+    return d;
+  };
+  const PKG = { name: 'k', version: '1.2.3', devDependencies: { playwright: '^1.49.0' } };
+  const good = {
+    name: 'k', version: '1.2.3', lockfileVersion: 3,
+    packages: { '': { name: 'k', version: '1.2.3', devDependencies: { playwright: '^1.49.0' } },
+                'node_modules/playwright': { version: '1.49.0' } },
+  };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const cases = [];
+  { const l = clone(good); delete l.version;                        cases.push(['top-level version absent', l]); }
+  { const l = clone(good); delete l.packages[''].version;           cases.push(['packages[""].version absent', l]); }
+  { const l = clone(good); l.version = '0.0.1';                     cases.push(['top-level version stale', l]); }
+  { const l = clone(good); l.packages[''].name = 'other';           cases.push(['name drifted', l]); }
+  { const l = clone(good); delete l.packages[''].devDependencies.playwright;
+                                                                    cases.push(['dependency absent — npm ci would refuse', l]); }
+  { const l = clone(good); delete l.packages['node_modules/playwright'];
+                                                                    cases.push(['dependency unresolved', l]); }
+
+  const claims = [];
+  try {
+    const g = run(make('good', PKG, good));
+    if (g.status !== 0) claims.push(`the matching pair went red (exit ${g.status}) — the check fires on everything`);
+    for (const [label, lock] of cases) {
+      const r = run(make(label.replace(/[^a-z0-9]+/gi, '-'), PKG, lock));
+      if (r.status !== 1) claims.push(`"${label}" was NOT caught (exit ${r.status})`);
+    }
+    const miss = run(make('nolock-x', PKG, good));
+    rmSync(join(tmp, 'nolock-x', 'package-lock.json'));
+    const m = run(join(tmp, 'nolock-x'));
+    if (m.status !== 2) claims.push(`an absent lockfile exited ${m.status}, wanted 2 — a check that cannot run is not a pass`);
+    const fix = run(make('fix', PKG, (() => { const l = clone(good); delete l.version; return l; })()));
+    if (!/--package-lock-only/.test(`${fix.stdout}${fix.stderr}`))
+      claims.push('the failure message does not name the command that fixes it');
+  } catch (e) {
+    claims.push(e.message);
+  } finally {
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+
+  const ok = claims.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'a lockfile that disagrees with package.json is caught',
+    detail: ok ? `${cases.length} drift shapes caught, matching pair green, absent lockfile exits 2`
                : claims.join('; '),
   });
 }

@@ -138,6 +138,39 @@ The test: would correcting this change what the issue *asserted*? If no, fix it.
    mid-run; the commit step rebases and retries, and if it still fails the issue is
    in the artifacts. Two navs/two footers on the site → a built page was saved back
    into `issues/`; the gate now catches it.
+4. **`cannot rebase: You have unstaged changes` at the Commit step is NOT a merge
+   conflict**, whatever an older copy of the workflow called it. It means a tool in
+   the run wrote to a *tracked* file that the Commit step does not stage, and git
+   then refused to begin the rebase at all. This cost the reference publication a
+   finished edition on 2026-09-11: `npm install` rewrote `package-lock.json`, whose
+   version had drifted from `package.json`. Since 0.26.0 the workflow uses `npm ci`
+   (which never writes the lockfile), checks the lockfile in a preflight before
+   spending anything, and — if some other tool ever does the same thing — names the
+   file in a warning and sets it aside rather than losing the issue. If you see this
+   on an older copy, run `/update-kit`.
+
+## Keeping the version straight: it lives in five places
+
+`package.json` is the authority. Four things must agree with it, and `npm run doctor`
+fails when they do not:
+
+| Where | Why it matters |
+|---|---|
+| `package.json` | The authority. Everything else points at it. |
+| `CHANGELOG.md` | A `## [X.Y.Z]` entry must exist for it. |
+| `README.md` | Must *point at* the number, never restate it — restated prose drifts silently. |
+| git tag `vX.Y.Z` | Advisory; legitimately lags between the bump and the release. |
+| **`package-lock.json`** | **The one that can cost you an issue.** npm records the version here twice, `npm install` rewrites it, and the file is tracked. |
+
+Only the last one can break a publication rather than confuse a reader, and it is the
+one the check originally missed. When you bump the version:
+
+```
+npm install --package-lock-only --no-audit --no-fund
+node bin/check-lockfile.mjs     # must print "agrees with package.json"
+```
+
+and commit `package-lock.json` in the same commit as the bump.
 
 ## Structural risks worth staring at
 

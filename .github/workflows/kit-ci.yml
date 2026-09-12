@@ -30,6 +30,15 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Gates catch what they claim (doctor)
         run: node bin/doctor.mjs
+
+      # package-lock.json is tracked, and `npm install` writes it. A lockfile that has drifted
+      # from package.json gets rewritten in the middle of the weekly run, leaving a modified
+      # file that stops the final push and discards a finished issue. Caught here on the push
+      # that causes the drift, it costs nothing; caught on a Friday it costs a week's edition.
+      # The kit shipped with exactly this drift and could not see it, because the template's
+      # own weekly run stops at the placeholder-ZIP preflight.
+      - name: The lockfile agrees with package.json
+        run: node bin/check-lockfile.mjs
       - name: A fresh clone builds
         run: node build.mjs
       - name: Orientation works

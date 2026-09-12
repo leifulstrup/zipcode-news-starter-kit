@@ -5,7 +5,9 @@
 versioned, and the git tags for which commit is which version. This line used to
 restate the number and drifted a full release behind it — a description of state kept
 separately from the state goes stale silently, and `npm run doctor` now fails when the
-four places that carry the version disagree.
+places that carry the version disagree. That check used to enumerate four of them and
+missed `package-lock.json`, which is the only one whose drift can cost you a published
+issue rather than merely confuse a reader; see 0.26.0.
 
 Build an AI-written, gate-checked weekly newsletter for your ZIP code — one you own
 and operate, published on your own site, for free-tier money.
