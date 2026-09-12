@@ -27,11 +27,49 @@ import { loadConfig, ROOT } from './lib/config.mjs';
 const args = process.argv.slice(2);
 const arg = (f, d = null) => { const i = args.indexOf(f); return i > -1 ? args[i + 1] : d; };
 
-// A complete issue with per-section sourcing runs 60–90 KB; anything much under
-// this is a truncated draft that reached the commit step (agent ran out of turns).
-// Raise it once you know your own typical size — see docs/OPERATIONS.md.
-const MIN_BYTES = 40000;
+/* A truncated draft is much smaller than a merely short edition, and this check lives in
+   the gap between them. It used to be a constant — 40000, under a comment telling the
+   publisher to "raise it once you know your own typical size", which is a calibration step
+   nobody performs and which goes stale the first time the format changes. The reference
+   implementation shipped the same idea and it went wrong exactly that way: its floor was
+   measured while the editor's addendum still lived inside the issue, the addendum moved to
+   its own file, editions got legitimately shorter, and the floor ended up ABOVE two real
+   published ones.
+
+   That was a harmless false positive while this only opened an issue. It is not harmless
+   now: since 0.27.0 the publication check REPAIRS what it finds, so a false positive
+   downloads an artifact and tries to republish a week that was never broken — every
+   weekend, for a publisher who is not watching. Adding an actuator to a detector raises the
+   price of a miscalibrated threshold.
+
+   So the expectation is measured from the editions this publication has actually produced,
+   rather than from a number in a comment. A brand-new kit has nothing to measure and falls
+   back to the absolute floor, which is the correct behaviour for issue number one. */
+const FLOOR_BYTES  = 20000;   // below this it is truncated whatever the corpus says
+const FAIL_RATIO   = 0.40;    // ... or under 40% of what this publication actually runs
+const WARN_RATIO   = 0.60;    // shrinking: worth saying, not worth blocking on
+const CORPUS_WEEKS = 6;       // recent enough to follow a format change, wide enough not to
+                              // be swung by one quiet week
 const STALE_FACTS_DAYS = 4;   // facts fetched long before the issue = reused data
+
+/* Median of the most recent editions BEFORE this one. Median rather than mean, because one
+   truncated draft already in the archive would drag a mean down and quietly lower the bar
+   for the next one — a threshold that ratchets downwards is worse than a fixed one. */
+function corpusMedian(excludeWeek) {
+  let sizes = [];
+  try {
+    sizes = readdirSync(join(ROOT, 'issues'))
+      .filter(f => /^\d{4}-\d{2}-\d{2}\.html$/.test(f))
+      .filter(f => f.slice(0, 10) !== excludeWeek)
+      .sort()
+      .slice(-CORPUS_WEEKS)
+      .map(f => statSync(join(ROOT, 'issues', f)).size);
+  } catch { return null; }
+  if (sizes.length < 3) return null;   // too few to calibrate against — use the floor alone
+  const v = [...sizes].sort((a, b) => a - b);
+  const m = v.length >> 1;
+  return v.length % 2 ? v[m] : Math.round((v[m - 1] + v[m]) / 2);
+}
 
 const config = loadConfig();
 
@@ -126,11 +164,28 @@ need(hasIssue,
 
 if (hasIssue) {
   const bytes = statSync(issuePath).size;
-  need(bytes >= MIN_BYTES,
-    `issues/${week}.html is only ${(bytes / 1024).toFixed(1)} KB (floor: ${MIN_BYTES / 1000} KB). ` +
-    `A short issue is usually a truncated draft that reached the commit step. Check the run's ` +
-    `num_turns against --max-turns.`);
-  console.log(`  issue present: ${(bytes / 1024).toFixed(1)} KB`);
+  const kb = n => `${(n / 1024).toFixed(1)} KB`;
+  const median = corpusMedian(week);
+  const failAt = median ? Math.max(FLOOR_BYTES, Math.round(median * FAIL_RATIO)) : FLOOR_BYTES;
+
+  need(bytes >= failAt,
+    `issues/${week}.html is only ${kb(bytes)}. ` +
+    (median
+      ? `Your last ${CORPUS_WEEKS} editions run ${kb(median)} at the median, and anything under ` +
+        `${kb(failAt)} is a truncated draft rather than a short week. `
+      : `Nothing under ${kb(failAt)} is a usable issue. `) +
+    `Check the run's num_turns against --max-turns.`);
+
+  // A warning, never a failure. A quiet week is allowed to be short, and this check must
+  // never be the reason a real edition is reported missing.
+  if (median) {
+    want(bytes >= median * WARN_RATIO,
+      `issues/${week}.html is ${kb(bytes)}, under ${Math.round(WARN_RATIO * 100)}% of your ` +
+      `${kb(median)} median. Not a fault on its own, but worth reading before it becomes normal.`);
+  }
+
+  console.log(`  issue present: ${kb(bytes)}` +
+    (median ? ` (median of last ${CORPUS_WEEKS}: ${kb(median)}, fails under ${kb(failAt)})` : ''));
 }
 
 /* ---------- 2. the artifacts either side of it ----------

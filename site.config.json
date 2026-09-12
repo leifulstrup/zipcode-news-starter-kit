@@ -42,5 +42,6 @@
     "hourUtc": 13,
     "model": "claude-haiku-4-5-20251001",
     "maxItems": 12
-  }
+  },
+  "publishLocalHour": 16
 }

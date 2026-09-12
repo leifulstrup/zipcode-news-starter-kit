@@ -62,6 +62,52 @@ jobs:
             --base "${{ steps.base.outputs.base }}" \
             ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }}
 
+      # The failure this system cannot see from the inside. GitHub DISABLES scheduled
+      # workflows in a repository with 60 days of no activity, and emails the owner once. If
+      # that mail is missed, every cron here stops at the same moment: no weekly issue, no
+      # publication check, and no smoke test left to complain about any of it — the watchdog
+      # is switched off along with everything it watches.
+      #
+      # A publication that is running resets the counter every week, so this number only
+      # climbs once something has ALREADY gone quiet. That is exactly when a second, louder
+      # signal is worth having. The case it is really for is a publisher who pauses over a
+      # summer and expects the paper to resume by itself: it will not, and nothing would have
+      # told them.
+      #
+      # Warned from day 45 rather than day 59, because a warning that arrives at the cliff
+      # edge is a warning nobody can act on.
+      - name: Warn before GitHub disables the schedule
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST=$(git log -1 --format=%cI)
+          DAYS=$(( ( $(date -u +%s) - $(date -u -d "$LAST" +%s) ) / 86400 ))
+          echo "last commit $LAST — $DAYS day(s) ago"
+          if [ "$DAYS" -lt 45 ]; then
+            echo "::notice::$DAYS days since the last commit; GitHub disables schedules at 60."
+            exit 0
+          fi
+          echo "::warning::$DAYS days since the last commit. GitHub disables scheduled workflows at 60 days of inactivity, which would stop the weekly issue, the publication check and this smoke test together — silently."
+          gh label create schedule-at-risk --color D93F0B \
+            --description "Scheduled workflows are close to GitHub's 60-day inactivity cutoff" 2>/dev/null || true
+          if [ -z "$(gh issue list --label schedule-at-risk --state open --limit 1 --json number --jq '.[].number')" ]; then
+            gh issue create --label schedule-at-risk \
+              --title "Scheduled workflows will be disabled in $(( 60 - DAYS )) days" \
+              --body "The last commit to this repository was **$DAYS days ago** ($LAST).
+
+          GitHub disables scheduled workflows after **60 days** of repository inactivity. When it does, the weekly issue, the publication check and this smoke test all stop at the same moment, and nothing is left to tell you — the watchdog is switched off along with what it watches.
+
+          Two things to know:
+
+          1. **Your paper has probably already stopped.** A publishing repo commits an issue every week, so this counter only climbs when the weekly run is not publishing. Check the **Actions** tab before worrying about the schedule itself.
+          2. **Any commit resets the 60 days.** If the workflows have already been disabled, re-enable them by hand from the Actions tab — GitHub does not do it for you when activity resumes.
+
+          Run: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}"
+          else
+            echo "::notice::schedule-at-risk issue already open — not filing another"
+          fi
+
       - name: Report a broken site
         if: failure()
         env:

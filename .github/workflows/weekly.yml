@@ -20,11 +20,24 @@ name: Weekly issue
 
 on:
   schedule:
-    # KEEP THIS LINE IN SYNC with "cronUtc" in site.config.json — the /setup skill
-    # rewrites both together. GitHub cron is UTC and does NOT follow daylight
-    # saving: a 20:00 UTC Friday is 16:00 US Eastern in summer and 15:00 in
-    # winter. Shift the hour or accept the drift.
+    # GENERATED — all three lines come from `node bin/sync-crons.mjs`, which derives them
+    # from "cronUtc", "timezone" and "publishLocalHour" in site.config.json. Do not hand-edit
+    # them; doctor fails when they disagree with the config.
+    #
+    # Why three. GitHub cron is UTC and does NOT follow daylight saving, so ONE Friday entry
+    # publishes at 16:00 local in summer and 15:00 in winter. This file used to say "shift
+    # the hour or accept the drift", which is a defect with an explanation attached. So both
+    # UTC hours that land on your local publish hour are scheduled, and the preflight job
+    # keeps whichever is correct this week. In a timezone that does not change its clocks the
+    # two collapse into one and sync-crons emits a single line.
+    #
+    # The third is a backstop, hours later. GitHub silently DROPS scheduled runs during
+    # platform degradation and never retries them — no run, no failure, nothing to look at,
+    # and the first person to notice is a reader. The backstop declines in seconds unless the
+    # week is genuinely unpublished, so on a normal week it costs nothing.
     - cron: '0 20 * * 5'
+    - cron: '0 21 * * 5'
+    - cron: '0 3 * * 6'
   workflow_dispatch:
     inputs:
       agent:
@@ -82,6 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       configured: ${{ steps.check.outputs.configured }}
+      proceed:    ${{ steps.schedule.outputs.proceed }}
+      week:       ${{ steps.schedule.outputs.week }}
     steps:
       - uses: actions/checkout@v6
       - id: check
@@ -95,15 +110,34 @@ jobs:
             echo "Configured for ZIP $ZIP."
           fi
 
+      # Three crons are scheduled and only one should ever do the work — which depends on
+      # the date, because GitHub cron is UTC and ignores daylight saving. The decision is a
+      # script rather than an `if:` expression because being wrong in either direction is
+      # serious (no edition that week, or two an hour apart) and because a decision nobody
+      # can run locally is a decision nobody can check. doctor drives it through both
+      # seasons and both hemispheres.
+      - id: schedule
+        if: steps.check.outputs.configured == 'true'
+        run: node bin/cron-decision.mjs --cron "${{ github.event.schedule }}"
+
+      # A copy that is not configured yet must not look like a failed publication, so the
+      # unconfigured case reports proceed=false through the same output.
+      - if: steps.check.outputs.configured != 'true'
+        run: echo "proceed=false" >> "$GITHUB_OUTPUT"
+
   issue:
     needs: preflight
-    if: needs.preflight.outputs.configured == 'true'
+    if: needs.preflight.outputs.configured == 'true' && needs.preflight.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45   # the real spend guard: bounds a runaway agent by wall-clock
 
     env:
       AGENT: ${{ github.event.inputs.agent || vars.DEFAULT_AGENT || 'claude' }}
-      WEEK:  ${{ github.event.inputs.week || '' }}
+      # From the preflight, which is the only place that knows whether this is a publish
+      # trigger (today, in the publication's own timezone) or the backstop (the publish day
+      # it is backing up). Getting this from `date` here would date a backstop edition
+      # Saturday, which is a different bug wearing the same clothes.
+      WEEK:  ${{ github.event.inputs.week || needs.preflight.outputs.week || '' }}
 
     steps:
       - uses: actions/checkout@v6

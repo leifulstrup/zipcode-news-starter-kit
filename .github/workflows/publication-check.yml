@@ -34,10 +34,21 @@ on:
         description: 'Also check the live site served it (blank = SITE_BASE_URL)'
         type: string
         default: ''
+      dry_run:
+        description: 'Decide and report, but neither commit nor dispatch'
+        type: boolean
+        default: false
 
+# Raised from `contents: read` / `actions: read` when this workflow gained the ability to
+# REPAIR rather than only report.
+# contents: write  — commit a recovered edition
+# actions:  write  — dispatch one retry. workflow_dispatch is the documented exception to
+#                    GITHUB_TOKEN not triggering further runs; a plain push is NOT, so the
+#                    recovery commit does not start kit-ci.yml and this job runs the
+#                    equivalent checks itself before committing.
 permissions:
-  contents: read
-  actions: read          # to ask whether a weekly run ever started
+  contents: write
+  actions: write
   issues: write
 
 jobs:
@@ -65,6 +76,7 @@ jobs:
 
       - name: Did the issue get published?
         id: check
+        continue-on-error: true
         run: |
           BASE="${{ github.event.inputs.base || vars.SITE_BASE_URL }}"
           if [ -n "$BASE" ]; then
@@ -73,34 +85,142 @@ jobs:
             node bin/check-published.mjs --week "${{ steps.week.outputs.week }}"
           fi
 
-      # Only runs when the check failed. The two verdicts need opposite fixes.
-      - name: Diagnose — did a weekly run even start?
-        id: diagnose
-        if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          W="${{ steps.week.outputs.week }}"
-          RUNS=$(gh run list --workflow=weekly.yml --limit 20 \
-                   --json createdAt,status,conclusion,event,url \
-                   --jq "[.[] | select(.createdAt >= \"${W}T00:00:00Z\")]")
-          COUNT=$(echo "$RUNS" | jq 'length')
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          if [ "$COUNT" = "0" ]; then
-            echo "verdict=NO RUN WAS EVER STARTED for $W. The scheduled trigger did not fire. GitHub drops scheduled runs during degradation and does not retry them, so this is very likely a platform incident rather than a bug in this repository." >> "$GITHUB_OUTPUT"
-            echo "action=Dispatch the catch-up run: \`gh workflow run weekly.yml -f week=$W\`" >> "$GITHUB_OUTPUT"
-          else
-            LAST=$(echo "$RUNS" | jq -r '.[0] | "\(.conclusion // .status) — \(.url)"')
-            echo "verdict=$COUNT weekly run(s) exist for $W. The most recent: $LAST. So the trigger fired and the cycle failed somewhere before the commit step — this is ours, not GitHub's." >> "$GITHUB_OUTPUT"
-            echo "action=Read that run's log. If the issue was built, recover it from the run's artifact rather than re-running the agent — a re-run costs a full research pass and will not reproduce the same edition." >> "$GITHUB_OUTPUT"
-          fi
+      - name: Nothing to do
+        if: steps.check.outcome == 'success'
+        run: echo "::notice::${{ steps.week.outputs.week }} is published. This workflow did nothing, which is the normal weekend."
 
-      - name: File it
-        if: failure()
+      # Until 0.27.0 this only diagnosed and opened an issue. That was the right first step
+      # and it was not enough: the reference implementation produced a complete, gate-green
+      # edition on 2026-09-11, failed at the step AFTER the gates, and the finished issue sat
+      # in a run artifact for a day. Nothing was wrong with it. Nothing needed a model. It
+      # needed someone to press a button — and for a publisher who is not reading the Actions
+      # tab on a Saturday, that button never gets pressed.
+      #
+      # bin/recovery-plan.mjs makes the decision and makes it alone; this file executes it.
+      - name: Decide what to do about it
+        id: plan
+        if: steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node bin/recovery-plan.mjs --week "${{ steps.week.outputs.week }}"
+
+      - name: Recover the edition from the failed run's artifact
+        id: recover
+        if: steps.plan.outputs.plan == 'recover'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           W="${{ steps.week.outputs.week }}"
+          gh run download "${{ steps.plan.outputs.run_id }}" -n "issue-$W" -D recovered
+          test -s "recovered/issues/$W.html" || { echo "::error::the artifact has no issue file"; exit 1; }
+          mkdir -p issues data/facts addendum
+          cp "recovered/issues/$W.html" issues/
+          [ -f "recovered/issues/$W.pdf" ]      && cp "recovered/issues/$W.pdf" issues/
+          [ -f "recovered/data/facts/$W.json" ] && cp "recovered/data/facts/$W.json" data/facts/
+          [ -f "recovered/addendum/$W.html" ]   && cp "recovered/addendum/$W.html" addendum/
+          rm -rf recovered
+          echo "recovered=1" >> "$GITHUB_OUTPUT"
+
+      # NON-NEGOTIABLE. A recovered edition goes through every gate again, against the gates
+      # as they are TODAY rather than the ones it passed on the day. An automatic route to
+      # publication that skipped the gates would be a strictly worse hole than the one it was
+      # built to close — the whole value of that artifact is that it was JUDGED.
+      - name: The recovered edition must pass every gate, now
+        id: regate
+        if: steps.recover.outputs.recovered == '1'
+        continue-on-error: true
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          node bin/privacy-scan.mjs "issues/$W.html"
+          node bin/verify-issue.mjs --week "$W"
+          node bin/check-recency.mjs --week "$W"
+          node bin/doctor.mjs
+
+      - name: The site must still build and carry the issue
+        id: rebuild
+        if: steps.regate.outcome == 'success'
+        continue-on-error: true
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          node build.mjs
+          for f in public/archive/index.html public/feed.xml "public/$W/index.html"; do
+            [ -f "$f" ] && { grep -q "$W" "$f" || { echo "::error::$W missing from $f"; exit 1; }; }
+          done
+
+      - name: Publish it
+        id: publish
+        if: ${{ steps.rebuild.outcome == 'success' && github.event.inputs.dry_run != 'true' }}
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          git config user.name  "newsletter bot"
+          git config user.email "actions@users.noreply.github.com"
+          for p in issues data addendum; do [ -e "$p" ] && git add "$p"; done
+          if git diff --cached --quiet; then
+            echo "::warning::nothing staged — the artifact matched what is already committed"
+            exit 0
+          fi
+          git commit -m "Issue of $W (recovered) — the run that wrote it could not publish it
+
+          Recovered by publication-check.yml from run ${{ steps.plan.outputs.run_id }}, which
+          built this edition and then failed before the push. Re-gated on the way in against
+          today's gates, not the ones it originally passed.
+
+          Recovered rather than re-run: the edition already existed and passed, and re-running
+          the agent would have spent a research pass to produce a different issue."
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! REBASE_OUT="$(git rebase origin/main 2>&1)"; then
+              echo "$REBASE_OUT"; git rebase --abort 2>/dev/null || true
+              echo "::error::could not rebase the recovered edition onto main"
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "published=1" >> "$GITHUB_OUTPUT"
+              echo "::notice::$W recovered and published"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::could not push the recovered edition after 3 attempts"
+          exit 1
+
+      # Only when nothing was recoverable. recovery-plan.mjs has already established that the
+      # retry is within budget and that no run is in flight; this step does not re-decide.
+      - name: Dispatch one retry
+        id: retry
+        if: ${{ steps.plan.outputs.plan == 'retry' && github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          gh workflow run weekly.yml -f week="$W"
+          echo "::notice::dispatched one retry of weekly.yml for $W"
+          echo "dispatched=1" >> "$GITHUB_OUTPUT"
+
+      # Filed whenever the week is unpublished, INCLUDING when this workflow repaired it: a
+      # repair that happens silently is a repair nobody audits. On a `dry_run` the report goes
+      # to the job summary instead — a rehearsal must not leave litter, and a spurious
+      # "needs a human" issue is exactly the noise that trains a publisher to ignore the label.
+      - name: File it
+        if: steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          W="${{ steps.week.outputs.week }}"
+          if [ "${{ steps.publish.outputs.published }}" = "1" ]; then
+            STATE="RESOLVED — recovered and published"
+            DID="The edition built by run \`${{ steps.plan.outputs.run_id }}\` was downloaded, put through every gate again, rebuilt and pushed. Nothing was re-generated and no model was called. **Read it before you trust it** — it is the draft that was written on the day."
+          elif [ "${{ steps.retry.outputs.dispatched }}" = "1" ]; then
+            STATE="RETRY DISPATCHED"
+            DID="No recoverable edition existed, so one retry of \`weekly.yml\` was dispatched for $W. That is the entire retry budget: if it fails too, the next run of this check will stop and say so here rather than spending again."
+          else
+            STATE="NEEDS A HUMAN"
+            DID="Nothing was done automatically. ${{ steps.plan.outputs.reason }}"
+          fi
+          if [ "$DRY" = "true" ]; then STATE="REHEARSAL — $STATE"; fi
           gh label create not-published --color B60205 \
             --description "An issue that should exist does not" 2>/dev/null || true
           # One open issue at a time: two crons must not manufacture two reports
@@ -108,16 +228,24 @@ jobs:
           EXISTING=$(gh issue list --label not-published --state open --limit 1 --json number --jq '.[].number')
           BODY="\`bin/check-published.mjs\` found no publishable artifact for **$W**.
 
-          **Diagnosis.** ${{ steps.diagnose.outputs.verdict }}
+          **Plan chosen.** \`${{ steps.plan.outputs.plan }}\` — ${{ steps.plan.outputs.reason }}
 
-          **What to do.** ${{ steps.diagnose.outputs.action }}
+          **What happened.** $DID
 
           If the week was skipped deliberately, add \`$W\` to \`data/skipped-weeks.txt\` — do not silence this check. A check that cries wolf gets ignored, and an ignored check is worse than none.
 
           Check run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "$DRY" = "true" ]; then
+            { echo "## $STATE"; echo ""; echo "$BODY"; } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::dry run — the report above went to the job summary; no issue was filed"
+            exit 0
+          fi
           if [ -z "$EXISTING" ]; then
-            gh issue create --label not-published --title "No issue published for $W" --body "$BODY"
+            gh issue create --label not-published --title "$STATE — issue of $W" --body "$BODY"
           else
             echo "::notice::not-published issue #$EXISTING already open — commenting instead"
             gh issue comment "$EXISTING" --body "$BODY"
+            if [ "${{ steps.publish.outputs.published }}" = "1" ]; then
+              gh issue close "$EXISTING" --comment "Published — closing." || true
+            fi
           fi

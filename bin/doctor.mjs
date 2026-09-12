@@ -770,6 +770,179 @@ const width = Math.max(...rows.map(r => r.case.length));
   });
 }
 
+/* --------- the planner that may spend the publisher's money ---------
+   bin/recovery-plan.mjs is the only thing in this kit that decides, with nobody watching,
+   either to PUBLISH or to pay for a research pass. It is wrong in two opposite and expensive
+   directions, so both are asserted here rather than discovered by a publisher on a Sunday.
+
+     · a failed run WITH an artifact must plan `recover`, never `retry` — the edition already
+       exists and passed, and retrying pays to produce a different one;
+     · a week already retried must plan `give-up` — two check crons plus each retry's own
+       failure is a loop against a paid API, and the person it bills is not watching.
+
+   Driven from fixture run-lists, so this proves the decision rather than the GitHub API. */
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'recovery-plan-'));
+  const plan = (name, runs) => {
+    const f = join(tmp, `${name}.json`);
+    writeFileSync(f, JSON.stringify(runs));
+    const r = spawnSync('node', [join(ROOT, 'bin/recovery-plan.mjs'),
+      '--week', '2026-09-11', '--runs-json', f], { encoding: 'utf8' });
+    if (r.status !== 0) return { plan: `EXIT ${r.status}` };
+    try { return JSON.parse(r.stdout); } catch { return { plan: 'UNPARSEABLE' }; }
+  };
+  const run = o => ({ databaseId: 1, createdAt: '2026-09-11T20:00:00Z', status: 'completed',
+                      conclusion: 'failure', event: 'schedule', url: 'u', ...o });
+
+  const expect = [
+    ['no run at all — the cron never fired', [],                                             'retry'],
+    ['a run still in flight',                [run({ status: 'in_progress', conclusion: null })], 'give-up'],
+    ['failed, no artifact',                  [run({ hasArtifact: false })],                   'retry'],
+    ['failed WITH an artifact',              [run({ hasArtifact: true })],                    'recover'],
+    ['already retried once',                 [run({ hasArtifact: false }),
+                                              run({ databaseId: 2, event: 'workflow_dispatch',
+                                                    createdAt: '2026-09-12T02:00:00Z',
+                                                    hasArtifact: false })],                   'give-up'],
+    ['only a PREVIOUS week\'s run exists',   [run({ createdAt: '2026-09-04T20:00:00Z',
+                                                    conclusion: 'success' })],                'retry'],
+  ];
+
+  const claims = [];
+  try {
+    for (const [label, runs, want] of expect) {
+      const got = plan(label.replace(/[^a-z0-9]+/gi, '-'), runs).plan;
+      if (got !== want) claims.push(`${label}: planned "${got}", wanted "${want}"`);
+    }
+  } catch (e) {
+    claims.push(e.message);
+  } finally {
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+
+  const ok = claims.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'the recovery planner never retries what it can recover',
+    detail: ok ? `${expect.length} branches correct · recovery preferred, retry budget bounded`
+               : claims.join('; '),
+  });
+}
+
+/* --------- exactly one cron publishes, in either half of the year ---------
+   weekly.yml carries three crons and only one may ever do the work. Which one depends on
+   the date, because GitHub cron is UTC and does not follow daylight saving. Wrong in one
+   direction is a week with no edition; wrong in the other is two editions an hour apart.
+
+   Driven across the timezone shapes a publisher will actually pick, because the arithmetic
+   fails differently in each: a zone where the second slot crosses into the next UTC DAY
+   (US Pacific — the same rollover this kit already has a scar about), a zone that does not
+   change its clocks at all (Arizona), and a southern-hemisphere zone where the offsets run
+   the other way (Sydney). A fixed clock is passed in, so this tests the decision and not
+   today's date. */
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'cron-decision-'));
+  const decide = (cfg, cron, nowIso, issuesDir) => {
+    const cfgPath = join(tmp, 'c.json');
+    writeFileSync(cfgPath, JSON.stringify(cfg));
+    const r = spawnSync('node', [join(ROOT, 'bin/cron-decision.mjs'),
+      '--cron', cron, '--now', nowIso, '--config', cfgPath,
+      '--issues-dir', issuesDir || join(tmp, 'empty')], { encoding: 'utf8' });
+    try { return JSON.parse(r.stdout); } catch { return { proceed: `UNPARSEABLE (exit ${r.status})` }; }
+  };
+  mkdirSync(join(tmp, 'empty'), { recursive: true });
+
+  // tz, cronUtc, pinned local hour, [ [cron, whenUtc, mustProceed, label], ... ]
+  const ZONES = [
+    ['America/New_York', '0 20 * * 5', 16, [
+      ['0 20 * * 5', '2026-07-17T20:00:00Z', true,  'EDT · 20:00 UTC'],
+      ['0 21 * * 5', '2026-07-17T21:00:00Z', false, 'EDT · 21:00 UTC'],
+      ['0 20 * * 5', '2026-11-20T20:00:00Z', false, 'EST · 20:00 UTC'],
+      ['0 21 * * 5', '2026-11-20T21:00:00Z', true,  'EST · 21:00 UTC'],
+    ]],
+    // The second slot lands on the NEXT UTC day. This is the rollover the kit's own
+    // sync-crons scar is about, in the decision rather than in the generator.
+    ['America/Los_Angeles', '0 23 * * 5', 16, [
+      ['0 23 * * 5', '2026-07-17T23:00:00Z', true,  'PDT · 23:00 UTC Fri'],
+      ['0 0 * * 6',  '2026-07-18T00:00:00Z', false, 'PDT · 00:00 UTC Sat'],
+      ['0 23 * * 5', '2026-11-20T23:00:00Z', false, 'PST · 23:00 UTC Fri'],
+      ['0 0 * * 6',  '2026-11-21T00:00:00Z', true,  'PST · 00:00 UTC Sat'],
+    ]],
+    // No daylight saving: the two slots collapse, and the single cron must work all year.
+    ['America/Phoenix', '0 23 * * 5', 16, [
+      ['0 23 * * 5', '2026-07-17T23:00:00Z', true,  'no DST · July'],
+      ['0 23 * * 5', '2026-11-20T23:00:00Z', true,  'no DST · November'],
+    ]],
+    // Southern hemisphere: the offsets run the other way round the year.
+    ['Australia/Sydney', '0 6 * * 6', 16, [
+      ['0 5 * * 6', '2026-01-17T05:00:00Z', true,  'AEDT · 05:00 UTC'],
+      ['0 6 * * 6', '2026-01-17T06:00:00Z', false, 'AEDT · 06:00 UTC'],
+      ['0 5 * * 6', '2026-07-18T05:00:00Z', false, 'AEST · 05:00 UTC'],
+      ['0 6 * * 6', '2026-07-18T06:00:00Z', true,  'AEST · 06:00 UTC'],
+    ]],
+  ];
+
+  const claims = [];
+  try {
+    for (const [tz, cronUtc, publishLocalHour, cases] of ZONES) {
+      const cfg = { timezone: tz, cronUtc, publishLocalHour };
+      const proceeded = [];
+      for (const [cron, when, want, label] of cases) {
+        const got = decide(cfg, cron, when);
+        if (got.proceed !== want)
+          claims.push(`${tz} ${label}: proceed=${got.proceed}, wanted ${want}`);
+        if (got.proceed) proceeded.push(`${when.slice(0, 10)}`);
+      }
+      // The property that actually matters, stated directly: one publish per publication day.
+      const perDay = {};
+      for (const d of proceeded) perDay[d] = (perDay[d] || 0) + 1;
+      const doubled = Object.entries(perDay).filter(([, n]) => n > 1);
+      if (doubled.length)
+        claims.push(`${tz}: ${doubled.map(([d, n]) => `${n} crons publish on ${d}`).join(', ')}`);
+    }
+
+    /* The backstop: silent when the week published, firing when it did not, and dated to the
+       PUBLISH day rather than to the day it happens to run. */
+    const cfg = { timezone: 'America/New_York', cronUtc: '0 20 * * 5', publishLocalHour: 16 };
+    const withIssue = join(tmp, 'has'); mkdirSync(join(withIssue), { recursive: true });
+    writeFileSync(join(withIssue, '2026-07-17.html'), 'x');
+    const quiet = decide(cfg, '0 3 * * 6', '2026-07-18T03:00:00Z', withIssue);
+    const fires = decide(cfg, '0 3 * * 6', '2026-07-18T03:00:00Z', join(tmp, 'empty'));
+    if (quiet.proceed !== false) claims.push('the backstop fired on a week that DID publish');
+    if (fires.proceed !== true)  claims.push('the backstop stayed silent on a week that did not publish');
+    if (fires.week !== '2026-07-17')
+      claims.push(`the backstop dated its edition ${fires.week}, not the Friday 2026-07-17 it is backing up`);
+
+    /* A backstop far enough out to have crossed local midnight. The generated one is six
+       hours after the publish, so it is still the same local day and "today" and "the last
+       publish day" happen to agree — which means the six-hour case cannot tell a correct
+       implementation from one that just uses today's date. A publisher who moves the
+       backstop later, or a publication checked the next morning, immediately can. Asserted
+       here so the distinction is pinned rather than accidental. */
+    const nextMorning = decide(cfg, '0 14 * * 6', '2026-07-18T14:00:00Z', join(tmp, 'empty'));
+    if (nextMorning.week !== '2026-07-17')
+      claims.push(`a backstop running the next morning dated its edition ${nextMorning.week} — ` +
+        `it must be the publish day it is backing up (2026-07-17), not the day it happens to run`);
+
+    /* Manual dispatch must never be blocked by schedule reasoning. */
+    if (decide(cfg, '', '2026-07-15T09:00:00Z').proceed !== true)
+      claims.push('a manual dispatch was blocked by the schedule guard');
+  } catch (e) {
+    claims.push(e.message);
+  } finally {
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+
+  const ok = claims.length === 0;
+  if (!ok) failures++;
+  rows.push({
+    result: ok ? 'PASS' : 'FAIL',
+    case: 'exactly one cron publishes, in either half of the year',
+    detail: ok ? `${ZONES.length} timezones × both seasons · backstop silent when published, dated to the publish day`
+               : claims.join('; '),
+  });
+}
+
 console.log('\ndoctor — gate self-test against fixtures/\n');
 for (const r of rows)
   console.log(`  ${r.result.padEnd(4)}  ${r.case.padEnd(width)}  ${r.detail}`);
