@@ -36,9 +36,9 @@ Three consequences of the two-system split, all load-bearing:
 
 | Workflow | Schedule | Question it answers | Blind to | On failure |
 |---|---|---|---|---|
-| `weekly.yml` | Your `cronUtc` | Can an issue be written, and does it pass the gates? | Whether it deployed | Red X; `review` issue if the addendum flagged anything |
+| `weekly.yml` | Your `cronUtc`, both daylight-saving variants of it, and a backstop | Can an issue be written, and does it pass the gates? | Whether it deployed | Red X; `review` issue if the addendum flagged anything |
 | `smoke.yml` | After publish + daily | Is the site serving, with its disclosures intact? | Whether it's *this* week's issue | `site-down` issue |
-| `publication-check.yml` | The morning after + a backstop day | Does the week that should exist, exist? | Whether the content is good | `not-published` issue |
+| `publication-check.yml` | The morning after + a backstop day | Does the week that should exist, exist? — **and it repairs what it finds** | Whether the content is good | Recovers the edition from the failed run's artifact, or dispatches one retry; opens an issue either way, including on success |
 | `sources.yml` | Weekly probe + monthly retrospective | Are the sources alive, and did printed figures stay true? | Everything downstream | `source-down` issue; commits probe/retrospective data |
 | `daily.yml` (opt-in) | `daily.hourUtc` | Did anything genuinely change since yesterday? | Publication quality (it's a private radar) | Red X only — see below; no watchdog issue |
 
@@ -57,11 +57,27 @@ not to share the failure mode of the thing it watches (the publication check's c
 assertion needs no network, because GitHub being down is one of the things it
 catches). **Silence means the system is working.**
 
-GitHub cron notes: it ignores daylight saving (your publish hour drifts one hour for
-part of the year — accept it or edit the cron twice a year), scheduled workflows
-run only from the default branch, and **GitHub silently drops scheduled runs during
-platform incidents and never retries them** — which is exactly why
-`publication-check.yml` exists and why it runs on two different days.
+GitHub cron notes, and what is done about each:
+
+- **It ignores daylight saving.** One Friday entry publishes at 16:00 local in summer and
+  15:00 in winter. Since 0.27.0 `sync-crons.mjs` emits *both* UTC hours that land on your
+  local publish hour and `bin/cron-decision.mjs` keeps whichever is right that week, so the
+  hour no longer moves. In a timezone that does not change its clocks the two collapse to
+  one. Your pinned hour is `publishLocalHour` in `site.config.json`.
+- **It silently drops scheduled runs during platform incidents and never retries them.** No
+  run, no failure, nothing in the Actions tab — the first person to notice is a reader. Hence
+  the backstop cron on `weekly.yml`, which declines in seconds unless the week is genuinely
+  unpublished, and `publication-check.yml` running on two different days.
+- **Scheduled workflows run only from the default branch.**
+- **GitHub disables them entirely after 60 days of repository inactivity**, which would stop
+  the weekly issue, the publication check and the smoke test at the same moment — the watchdog
+  goes down with what it watches. The daily smoke test warns from day 45. Any commit resets
+  the counter; if they have already been disabled, re-enable them by hand from the Actions tab.
+
+**Rehearsing the repair.** `gh workflow run publication-check.yml -f week=YYYY-MM-DD -f
+dry_run=true` decides and reports without committing, dispatching, or opening an issue — the
+report goes to the job summary, headed `WOULD RECOVER AND PUBLISH`, `WOULD DISPATCH ONE RETRY`
+or `NEEDS A HUMAN`.
 
 ## When a label fires
 

@@ -87,9 +87,16 @@ config.
    publish an issue that drops the label, and refuses a removal with nobody's name
    on it, so the publication cannot decide it has graduated.
 3. **Timezone and publish day.** Default Friday. Compute the `cronUtc` line from
-   their timezone + day (a late-afternoon local publish is the convention). Tell
-   them GitHub cron ignores daylight saving, so the publish hour will drift by one
-   hour for part of the year — that is normal and documented.
+   their timezone + day (a late-afternoon local publish is the convention), then
+   **run `node bin/sync-crons.mjs`** — it derives every other schedule from that one
+   line, writes `publishLocalHour` so the hour is pinned, and emits the two crons
+   that keep the publish time fixed across daylight saving plus a backstop. Do not
+   hand-edit cron lines afterwards; `npm run doctor` fails when they disagree with
+   `site.config.json`.
+
+   Tell them their publication goes out at the local hour they chose and **stays
+   there year-round** — before 0.27.0 it drifted by an hour for part of the year,
+   which is what the older docs describe.
 4. **Contact inbox — recommend one, via AgentMail.** A reader inbox is how the
    newsletter learns: corrections, tips, and suggestions for new sources and topics
    to cover. Recommend the user create a **free AgentMail (agentmail.to) inbox** —

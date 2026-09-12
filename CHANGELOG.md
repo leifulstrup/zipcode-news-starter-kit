@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.27.2] — 2026-09-12
+
+Docs caught up with 0.26.0–0.27.1. Three things the kit still told publishers were no longer
+true, and one of them was in the first conversation a new publisher has.
+
+### Fixed
+
+- **`/setup` told new publishers their publish hour would drift** by an hour for part of the
+  year, "normal and documented". It has not been true since 0.27.0. It now says the hour stays
+  put, tells the agent to run `bin/sync-crons.mjs` (which pins `publishLocalHour` and emits the
+  daylight-saving pair plus the backstop), and warns against hand-editing cron lines afterwards
+  because `doctor` fails when they disagree with `site.config.json`.
+- **`docs/OPERATIONS.md` described `publication-check.yml` as a workflow that opens an issue.**
+  It repairs now: it recovers the edition from the failed run's artifact or dispatches one
+  retry, and opens an issue either way, including on success. The workflow table said
+  `weekly.yml` runs on "your `cronUtc`", which is now three crons.
+- **The GitHub cron notes listed the daylight-saving drift as something to accept.** They now
+  list each cron behaviour with what is done about it — including the 60-day inactivity
+  disable, which stops the weekly issue, the publication check and the smoke test at the same
+  moment and so cannot be caught from inside.
+- Added the rehearsal command, and what it does *not* do: no commit, no dispatch, no issue.
+
+**Why this is its own release.** A description of state kept separately from the state goes
+stale silently — the rule this kit already applies to version numbers. It applies to prose
+about behaviour too, and the worst place for it to be wrong is the setup interview, where the
+reader has no way to know the doc is out of date.
+
 ## [0.27.1] — 2026-09-12
 
 0.27.0's repair path shipped with a broken shell line in the reference implementation, and
