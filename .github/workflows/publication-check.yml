@@ -216,6 +216,15 @@ jobs:
           elif [ "${{ steps.retry.outputs.dispatched }}" = "1" ]; then
             STATE="RETRY DISPATCHED"
             DID="No recoverable edition existed, so one retry of \`weekly.yml\` was dispatched for $W. That is the entire retry budget: if it fails too, the next run of this check will stop and say so here rather than spending again."
+          elif [ "$DRY" = "true" ] && [ "${{ steps.plan.outputs.plan }}" = "recover" ]; then
+            # A rehearsal must report what it WOULD have done. Saying "needs a human" about a
+            # week the machinery would have fixed by itself teaches the publisher the opposite
+            # of what the rehearsal is for.
+            STATE="WOULD RECOVER AND PUBLISH"
+            DID="The artifact from run \`${{ steps.plan.outputs.run_id }}\` was downloaded and put through the gates; the commit was skipped because this was a rehearsal."
+          elif [ "$DRY" = "true" ] && [ "${{ steps.plan.outputs.plan }}" = "retry" ]; then
+            STATE="WOULD DISPATCH ONE RETRY"
+            DID="No recoverable edition exists, so a real run would have dispatched one retry of \`weekly.yml\` for $W. The dispatch was skipped because this was a rehearsal."
           else
             STATE="NEEDS A HUMAN"
             DID="Nothing was done automatically. ${{ steps.plan.outputs.reason }}"

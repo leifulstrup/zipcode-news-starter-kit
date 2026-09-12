@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.27.1] — 2026-09-12
+
+0.27.0's repair path shipped with a broken shell line in the reference implementation, and
+rehearsing it there found two faults that this kit inherited the shape of.
+
+### Fixed
+
+**A rehearsal reported the wrong outcome.** With `dry_run` set and a plan of `retry`, the
+report said "NEEDS A HUMAN" — because the retry step is skipped on a rehearsal, so the flag
+it sets was never written. It now says `WOULD DISPATCH ONE RETRY` or `WOULD RECOVER AND
+PUBLISH`. A rehearsal that misreports what it would have done teaches the publisher the
+opposite of what it is for, and a publisher rehearsing this is by definition someone who
+wants to know what it does before it does it.
+
+### Added
+
+- **`bin/check-workflow-shell.mjs`**, in `kit-ci.yml` — `bash -n` over every `run:` block in
+  every workflow, plus a narrow lint for the quoting shape that broke the reference
+  implementation. A workflow step is a shell script that nothing executes until your publish
+  day: `.github/` is guarded, gated and reviewed, and none of that runs a line of it.
+
+  Its header is deliberately honest about the limits. `bash -n` accepts
+  `[ -z "$X" ; then` — a valid parse and a runtime failure — and whether the quoting bug is
+  even a *syntax* error depends on how many quotes happen to follow it, which depends on what
+  the `${{ }}` expressions expand to. **The practice this cannot replace is extracting the
+  step, stubbing the commands that touch the world, and running it.**
+
+### Verified
+
+- All 62 `run:` blocks across the six workflows parse as shell.
+- The "File it" step driven through all six states — `recover`/`retry`/`give-up` × rehearsal
+  or real — with `gh` stubbed. Rehearsals write to the job summary and file nothing; real runs
+  file with a title that says what happened.
+- `doctor` 29 checks; schedules still agree with `site.config.json`.
+
 ## [0.27.0] — 2026-09-12
 
 A week that does not publish now repairs itself, and the schedule stopped depending on

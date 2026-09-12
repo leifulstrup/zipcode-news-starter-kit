@@ -39,6 +39,14 @@ jobs:
       # own weekly run stops at the placeholder-ZIP preflight.
       - name: The lockfile agrees with package.json
         run: node bin/check-lockfile.mjs
+
+      # Every `run:` block is a shell script that nothing executes until your publish day.
+      # `.github/` is guarded, gated and reviewed, and none of that runs a line of it — which
+      # is how a broken step reached main in the reference implementation on 2026-09-12 and
+      # died with `found: command not found`. Syntax only; the script's own header is honest
+      # about what that leaves uncovered.
+      - name: Every workflow step is at least valid shell
+        run: node bin/check-workflow-shell.mjs
       - name: A fresh clone builds
         run: node build.mjs
       - name: Orientation works
