@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.27.3] — 2026-11-12
+
+One ignore rule, so a publisher's instance cannot commit Claude Code's local settings file.
+
+### Security
+
+- **`.gitignore` now excludes `.claude/settings.local.json` and `.claude/*.local.json`.**
+  Claude Code saves a command approved with "Yes, and don't ask again" verbatim in that
+  file, so a token typed inline (a Cloudflare or GitHub one, say) is stored with it. Apiiro
+  found about 1,100 such files with live secrets in public repositories (Ars Technica,
+  November 2026). The global gitignore Claude Code sets up protects one machine and does not
+  travel with a clone, so each instance now carries the rule itself. The tracked
+  `.claude/skills/` files are unaffected.
+
 ## [0.27.2] — 2026-09-12
 
 Docs caught up with 0.26.0–0.27.1. Three things the kit still told publishers were no longer

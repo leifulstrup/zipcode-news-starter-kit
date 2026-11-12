@@ -5,3 +5,10 @@ node_modules/
 # Shared-registry cache (CONTRACT §11). Re-fetched on demand; never committed —
 # a stale copy in git would look like curated data and drift silently.
 data/registry-cache/
+
+# Claude Code local settings. "Yes, and don't ask again" saves the approved
+# command verbatim, so a credential typed inline lands in this file. It is
+# per-machine and must never be committed. A global gitignore does not travel
+# with a clone, so the rule lives here.
+.claude/settings.local.json
+.claude/*.local.json
